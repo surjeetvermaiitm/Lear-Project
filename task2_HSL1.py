@@ -62,8 +62,7 @@ for i in range(17):
     result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
     hrly_diff.append([hourly_distribution[i][j+1] - hourly_distribution[i][j] for j in range(blank, blank + len(hourly_distribution[i])-1)])
     blank = (np.where(timear > starttime+(i+1)*(onehr))[0][0])
-    print(blank)
-    
+
 #%%
 'This cell calculates the most important quantities relating to the final calculations'
 hrly_diff = np.array(hrly_diff)
@@ -92,3 +91,16 @@ plt.title('Hourly plot of Industry Quantities', fontsize = 16)
 plt.legend(('Availability', 'Quality', 'OEE', 'Performance'))
 plt.show()
 #%%
+'This cell attempts to plot the heatmap for the hourly data'
+import seaborn as sns
+fig, ax = plt.subplots(figsize = (12,7))
+ax.set_xticks([])
+ax.set_yticks([])
+plt.title('Hourly Heat Map')
+ttl = ax.title
+ttl.set_position([0.5, 1.5])
+ax.axis('off')
+labels = np.asarray(["{0} - {1:.2f}".format(value, symb) for value, symb in zip(hours, OEE_hrly)]).reshape(17,1)
+sns.heatmap(OEE_hrly.reshape(17,1), annot = labels, fmt = "" ,cmap = 'RdYlGn', ax =ax, linewidths = 0.3, alpha = 0.9)
+#%%
+
