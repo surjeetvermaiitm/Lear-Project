@@ -46,3 +46,49 @@ performance = OEE/(availability*quality)
 print('The required results from the calculations are as follow:' + '\n' + 'OEE: ' + str(OEE) + '\n'+ 'Availability: ' + str(availability) + '\n' + 'Performance: ' + str(performance) + '\n' + 'Quality: ' + str(quality))
 
 #%%
+'This cell prepares the data for calculation of hourly quantities'
+timear = pd.to_datetime(dataset['Date'] + ' ' + dataset['Time'])
+hourly_distribution = []
+result_hrly = []
+hrly_diff = []
+blank = 0
+onehr = pd.to_timedelta('1:00:00')
+starttime = pd.to_datetime('15-10-2019'+' ' + '7:00:00')
+
+#%%
+'This cell contains a loop to continue quantity preparation and converts them to appropriate types'
+for i in range(17):
+    hourly_distribution.append(timear[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
+    result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
+    hrly_diff.append([hourly_distribution[i][j+1] - hourly_distribution[i][j] for j in range(blank, blank + len(hourly_distribution[i])-1)])
+    blank = (np.where(timear > starttime+(i+1)*(onehr))[0][0])
+    print(blank)
+    
+#%%
+'This cell calculates the most important quantities relating to the final calculations'
+hrly_diff = np.array(hrly_diff)
+hrly_unplanned = []
+for i in range(17):
+    hrly_unplanned.append(np.array(hrly_diff[i]).sum(initial = pd.to_timedelta('00:00:00'), where  = (np.array(hrly_diff[i]) > pd.to_timedelta('00:01:00'))))
+ok_hrly = np.array([Counter(result_hrly[i])['OK'] for i in range(len(result_hrly))])
+ng_hrly = np.array([Counter(result_hrly[i])['NG'] for i in range(len(result_hrly))])
+hrly_possibility = total_possibility/24;
+
+#%%
+'This cell calculates all the final hourly quantities'
+availability_hrly = 1 - np.divide(hrly_unplanned,pd.to_timedelta('1:00:00'))
+quality_hrly = np.divide(ok_hrly,(ok_hrly + ng_hrly))
+OEE_hrly = ok_hrly / hrly_possibility
+performance_hrly = OEE_hrly/(availability_hrly*quality_hrly)
+#%%
+'This cell plots the relevant quantities'
+import matplotlib.pyplot as plt
+hours = np.arange(8,25,1)
+plt.plot(hours, availability_hrly, 'r-')
+plt.plot(hours, quality_hrly, 'g--')
+plt.plot(hours, OEE_hrly, 'k')
+plt.plot(hours, performance_hrly, 'm')
+plt.title('Hourly plot of Industry Quantities', fontsize = 16)
+plt.legend(('Availability', 'Quality', 'OEE', 'Performance'))
+plt.show()
+#%%
