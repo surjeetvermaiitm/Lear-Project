@@ -10,6 +10,8 @@ Created on Thu May 21 17:40:13 2020
 import numpy as np
 import pandas as pd
 from collections import Counter
+from tkinter import *
+from tkinter.ttk import *
 filepath = '/home/syshain/Arshad/Lear_India_Remote_Internship/Task2_OEE/HSL1/'
 
 #%%
@@ -67,7 +69,7 @@ for i in range(17):
 'This cell calculates the most important quantities relating to the final calculations'
 hrly_diff = np.array(hrly_diff)
 hrly_unplanned = []
-for i in range(17):
+for i in range(len(hourly_distribution)):
     hrly_unplanned.append(np.array(hrly_diff[i]).sum(initial = pd.to_timedelta('00:00:00'), where  = (np.array(hrly_diff[i]) > pd.to_timedelta('00:01:00'))))
 ok_hrly = np.array([Counter(result_hrly[i])['OK'] for i in range(len(result_hrly))])
 ng_hrly = np.array([Counter(result_hrly[i])['NG'] for i in range(len(result_hrly))])
@@ -90,17 +92,38 @@ plt.plot(hours, performance_hrly, 'm')
 plt.title('Hourly plot of Industry Quantities', fontsize = 16)
 plt.legend(('Availability', 'Quality', 'OEE', 'Performance'))
 plt.show()
-#%%
-'This cell attempts to plot the heatmap for the hourly data'
-import seaborn as sns
-fig, ax = plt.subplots(figsize = (12,7))
-ax.set_xticks([])
-ax.set_yticks([])
-plt.title('Hourly Heat Map')
-ttl = ax.title
-ttl.set_position([0.5, 1.5])
-ax.axis('off')
-labels = np.asarray(["{0} - {1:.2f}".format(value, symb) for value, symb in zip(hours, OEE_hrly)]).reshape(17,1)
-sns.heatmap(OEE_hrly.reshape(17,1), annot = labels, fmt = "" ,cmap = 'RdYlGn', ax =ax, linewidths = 0.3, alpha = 0.9)
-#%%
 
+#%%
+'This cell prepares the respective quantities for the generation of a heat map'
+result_minutely = []
+fivemin = pd.to_timedelta('00:05:00')
+starttime = pd.to_datetime('15-10-2019'+' ' + '7:00:00')
+#%%"
+'This cell contains a loop to continue quantity preparation and converts them to appropriate types'
+for i in range(len(hourly_distribution)*12):
+    result_minutely.append(result[np.where(timear > starttime+i*(fivemin))[0][0]:(np.where(timear > starttime+(i+1)*(fivemin))[0][0])-1])
+#%%
+'This cell calculates the most important quantities relating to the final calculations'    
+ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
+ng_minutely = np.array([Counter(result_minutely[i])['NG'] for i in range(len(result_minutely))])
+
+#%%
+'This cell prepares quantities for heat map plotting'
+import seaborn as sns
+h1 = np.linspace(np.array([8]*12), np.array([24]*12), 17).flatten()
+h2 = h1-1
+m1 = np.arange(5,65,5)
+m2 = m1-5
+hString = np.array(["{1} - {0}".format(v1,v2) for v1,v2 in zip(h1,h2)])
+mString = np.array(["{1} - {0}".format(v1,v2) for v1, v2 in zip(m1,m2)]*17)
+df = pd.DataFrame({'hours': hString, 'minutes': mString, 'OK': ok_minutely}, index = np.arange(204))
+p_table = pd.pivot_table(df, values ='OK', index ='hours' ,columns ='minutes')
+in1 = [hString[i*12] for i in np.arange(17)]
+p_table = p_table.reindex(in1)
+
+#%%
+'Here the final heat map is plotted'
+fig, ax = plt.subplots(figsize = (10,8))
+plt.title('Hourly Heat Map, every five minutes')
+sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values)
+#%%
