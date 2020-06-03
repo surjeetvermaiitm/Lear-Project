@@ -10,8 +10,6 @@ Created on Thu May 21 17:40:13 2020
 import numpy as np
 import pandas as pd
 from collections import Counter
-from tkinter import *
-from tkinter.ttk import *
 filepath = '/home/syshain/Arshad/Lear_India_Remote_Internship/Task2_OEE/HSL1/'
 
 #%%
@@ -119,11 +117,13 @@ mString = np.array(["{1} - {0}".format(v1,v2) for v1, v2 in zip(m1,m2)]*17)
 df = pd.DataFrame({'hours': hString, 'minutes': mString, 'OK': ok_minutely}, index = np.arange(204))
 p_table = pd.pivot_table(df, values ='OK', index ='hours' ,columns ='minutes')
 in1 = [hString[i*12] for i in np.arange(17)]
+in2 = mString[0:12]
 p_table = p_table.reindex(in1)
+p_table.columns = p_table.columns.reindex(in2)[0]
 
 #%%
 'Here the final heat map is plotted'
-fig, ax = plt.subplots(figsize = (10,8))
+fig, ax = plt.subplots(figsize = (15,8))
 plt.title('Hourly Heat Map, every five minutes')
 sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values)
 #%%

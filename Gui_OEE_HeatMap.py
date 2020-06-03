@@ -7,6 +7,7 @@ Created on Fri May 29 14:21:52 2020
 """
 #%%
 from tkinter import *
+import tkinter
 from tkinter.ttk import *
 from tkinter import filedialog
 from os import path
@@ -18,12 +19,15 @@ import datetime as dt
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import seaborn as sns
 pattern = r"Unnamed"
 dataset = []
 date = []
 dt_relevant = []
+i_bn = 0
+i_end = 0
 chosen = " "
 st_date = dt.datetime.now()
 end_date = dt.datetime.now()
@@ -44,7 +48,6 @@ def window2():
     window1.destroy()
     date = dataset['Date']
     date = [dt.datetime.strptime(str(date[i]), '%d-%m-%Y') for i in range(len(date))]
-    print(np.unique(date))
     window2 = Tk()
     window2.geometry('850x300')
     window2.title('Date selection')
@@ -53,7 +56,6 @@ def window2():
     strt_cmb2 = Combobox(window2)
     strt_cmb2.grid(column = 2,row = 6)
     strt_cmb2['values'] =tuple(np.unique(date))
-    print(strt_cmb2['values'])
     strt_cmb2.current(0)
     edate_lbl2 = Label(window2, text = 'Choose ending date').grid(column = 3, row = 6)
     end_cmb2 = Combobox(window2)
@@ -64,8 +66,6 @@ def window2():
     def clicked2():
         global st_date, end_date
         st_date = dt.datetime.strptime(strt_cmb2.get(), '%Y-%m-%d %H:%M:%S')
-        print(st_date)
-        print(type(st_date))
         end_date = pd.to_datetime(end_cmb2.get())
         #sdate_lbl3.configure(text = st_date)
         window2.destroy()
@@ -80,8 +80,6 @@ def window3():
     s_et = (st_date + dt.timedelta(hours=23))
     e_st = (end_date + dt.timedelta(0))
     e_et = (end_date + dt.timedelta(hours =23))
-    print(s_st)
-    print(s_et)
     s_dti = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))
     e_dti = tuple(pd.date_range(start = e_st, end = e_et, freq = '1H'))
     window3 = Tk()
@@ -100,9 +98,22 @@ def window3():
     etime_cmb3.current(0)
     
     def begin():
+        res_win = Tk()
+        res_win.title('HeatMap Visualization')
         txt = calc_duration_parameters()
         sres_lbl = Label(window3, text = txt).grid()
-        htmp_calc()
+        p_table = htmp_calc()
+        f = Figure(figsize = (10,10))
+        f.suptitle('Heatmap for 5 minutes')
+        a = f.add_subplot(111)
+        sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+        canvas = FigureCanvasTkAgg(f, master = res_win)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side = BOTTOM, fill = BOTH, expand = True)
+        toolbar = NavigationToolbar2Tk(canvas, res_win)
+        toolbar.update()
+        canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
+        res_win.mainloop()
         
     def clicked3():
         global st_time ,end_time
@@ -117,12 +128,11 @@ def window3():
 #%%
 
 def calc_duration_parameters():
-    global dt_relevant
+    global dt_relevant, i_bn, i_end
     dates = dataset['Date']
     time = dataset['Time']
     result = dataset[' Result']
     DT_column = pd.Series([dt.datetime.strptime(dates[i] + ' '+ time[i], '%d-%m-%Y %H:%M:%S') for i in range(len(dates))])
-    print(type(DT_column[1]))
     i_bn = np.where(DT_column > st_time)[0][0]
     i_end = np.where(DT_column > end_time)[0][0]
     dt_relevant = DT_column[i_bn:i_end]
@@ -151,15 +161,13 @@ def htmp_calc():
     result_hrly = []
     hrly_diff = []
     onehr = pd.to_timedelta('1:00:00')
-    starttime = dt_relevant[0]
-    print(timear)
-    print(starttime)
-    print(np.where(timear > (starttime + onehr))[0][0])
-    for i in range(len(dt_relevant)):
+    starttime = dt_relevant[i_bn]
+    rel_rge = (dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(st_time,'%Y-%m-%d %H:%M:%S')).seconds/3600
+    
+    for i in range(int(rel_rge)):
         hourly_distribution.append(timear[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
         result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
-
-    ok_hrly = np.array([Counter(result_hrly[i])['OK'] for i in range(len(result_hrly))])
+        
     
     'This part prepares the respective quantities for the generation of a heat map'
     result_minutely = []
@@ -171,30 +179,20 @@ def htmp_calc():
     'This cell calculates the most important quantities relating to the final calculations'    
     ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
     st2 = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') + dt.timedelta(hours = 1)
-    et2 = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') + dt.timedelta(hours = 1)
-    h1 = np.array([[str(i)]*12 for i in pd.date_range(st_time, end_time, freq = '1H')])
-    h2 = np.array([[str(i)]*12 for i in pd.date_range(st2, et2, freq = '1H')])
+    et2 = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') - dt.timedelta(hours = 1)
+    h1 = np.array([[str(i)]*12 for i in pd.date_range(st_time, et2, freq = '1H')]).flatten()
+    h2 = np.array([[str(i)]*12 for i in pd.date_range(st2, end_time, freq = '1H')]).flatten()
     m1 = np.arange(5,65,5)
     m2 = m1-5
     hString = np.array(["{0} - {1}".format(v1,v2) for v1,v2 in zip(h1,h2)])
-    mString = np.array(["{1} - {0}".format(v1,v2) for v1, v2 in zip(m1,m2)]*17)
-    df = pd.DataFrame({'hours': hString, 'minutes': mString, 'OK': ok_minutely}, index = np.arange(204))
+    mString = np.array(["{1} - {0}".format(v1,v2) for v1, v2 in zip(m1,m2)]*len(hourly_distribution))
+    df = pd.DataFrame({'hours': hString, 'minutes': mString, 'OK': ok_minutely}, index = np.arange(12*len(hourly_distribution)))
     p_table = pd.pivot_table(df, values ='OK', index ='hours' ,columns ='minutes')
     in1 = [hString[i*12] for i in np.arange(len(hourly_distribution))]
     in2 = mString[0:12]
     p_table = p_table.reindex(in1)
     p_table.columns = p_table.columns.reindex(in2)[0]
-    f = Figure(figsize = (10,10), dp =100)
-    a = f.add_subplot(111)
-    sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values)
-    canvas = FigureCanvasTkAgg(f, window3)
-    canvas.show()
-    canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-
-    """ toolbar = NavigationToolbar2TkAgg(canvas, window4)
-    toolbar.update()
-    canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    """
+    return p_table    
 
 #%%
 'Defining the GUI'
@@ -217,26 +215,3 @@ hrly_diff = []
 blank = 0
 onehr = pd.to_timedelta('1:00:00')
 starttime = pd.to_datetime('15-10-2019'+' ' + '7:00:00')
-
-#%%
-'This cell contains a loop to continue quantity preparation and converts them to appropriate types'
-for i in range(17):
-    hourly_distribution.append(timear[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
-    result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
-#%%
-'This cell calculates the most important quantities relating to the final calculations'
-ok_hrly = np.array([Counter(result_hrly[i])['OK'] for i in range(len(result_hrly))])
-
-#%%
-'This cell prepares the respective quantities for the generation of a heat map'
-result_minutely = []
-fivemin = pd.to_timedelta('00:05:00')
-starttime = pd.to_datetime('15-10-2019'+' ' + '7:00:00')
-#%%"
-'This cell contains a loop to continue quantity preparation and converts them to appropriate types'
-for i in range(len(hourly_distribution)*12):
-    result_minutely.append(result[np.where(timear > starttime+i*(fivemin))[0][0]:(np.where(timear > starttime+(i+1)*(fivemin))[0][0])-1])
-#%%
-'This cell calculates the most important quantities relating to the final calculations'    
-ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
-ng_minutely = np.array([Counter(result_minutely[i])['NG'] for i in range(len(result_minutely))])
