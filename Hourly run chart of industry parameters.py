@@ -18,6 +18,7 @@ import datetime as dt
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk as addToolbar
 from matplotlib.figure import Figure
 import seaborn as sns
 pattern = r"Unnamed"
@@ -186,8 +187,6 @@ def window4():
     OEE_hrly = ok_hrly / hrly_possibility
     performance_hrly = OEE_hrly/(availability_hrly*quality_hrly)
     
-    
-    
     f = Figure(figsize=(10,10), dpi = 100)
     a = f.add_subplot(111)
     a.plot(hours, availability_hrly, 'r-')
@@ -200,6 +199,11 @@ def window4():
     canvas = FigureCanvasTkAgg(f,window4)
     canvas.draw()
     canvas.get_tk_widget().pack(side = tk.TOP, fill= tk.BOTH, expand=False)
+    
+    toolbar = addToolbar(canvas,window4)
+    toolbar.update()
+    canvas._tkcanvas.pack(side = tk.TOP, fill= tk.BOTH, expand=False)
+    
     
     window4.mainloop()
     
