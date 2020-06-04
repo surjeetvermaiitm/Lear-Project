@@ -5,9 +5,9 @@ Created on Fri May 29 14:21:52 2020
 
 @author: syshain
 """
+
 #%%
 from tkinter import *
-import tkinter
 from tkinter.ttk import *
 from tkinter import filedialog
 from os import path
@@ -84,36 +84,40 @@ def window3():
     e_dti = tuple(pd.date_range(start = e_st, end = e_et, freq = '1H'))
     window3 = Tk()
     window3.geometry('850x300')
-    window3.title('Time selection')
-    stime_lbl3 = Label(window3, text = 'Choose starting time on')
-    stime_lbl3.grid(column = 1, row =8)
-    stime_cmb3 = Combobox(window3)
-    stime_cmb3.grid(column = 2, row = 8)
+    frame1 = Frame(window3, relief = RAISED)
+    frame1.pack(fill = X)
+    window3.title('Time selection') 
+    stime_lbl3 = Label(frame1, text = 'Choose starting time for analysis', width = 20)
+    stime_lbl3.pack(side = LEFT, padx = 5, pady = 5)
+    stime_cmb3 = Combobox(frame1)
+    stime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
     stime_cmb3['values'] =s_dti
     stime_cmb3.current(0)
-    etime_lbl3 = Label(window3, text = 'Choose ending time on').grid(column = 3, row =8)
-    etime_cmb3 = Combobox(window3)
-    etime_cmb3.grid(column = 4, row = 8)
+    etime_lbl3 = Label(frame1, text = 'Choose ending time on').pack(side = LEFT, padx = 5, pady = 5)
+    etime_cmb3 = Combobox(frame1)
+    etime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
     etime_cmb3['values'] = e_dti
     etime_cmb3.current(0)
+    sres_lbl = Label(window3, text = '')
+    sres_lbl.pack(padx = 5, pady = 5)
+    f = Figure(figsize = (10,10))
+    f.clf()
+    f.suptitle('Heatmap for 5 minutes')
+    canvas = FigureCanvasTkAgg(f, master = window3)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side = BOTTOM, fill = BOTH, expand = True)
+    toolbar = NavigationToolbar2Tk(canvas, window3)
+    toolbar.update()
+    canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
     
     def begin():
-        res_win = Tk()
-        res_win.title('HeatMap Visualization')
         txt = calc_duration_parameters()
-        sres_lbl = Label(window3, text = txt).grid()
+        frame2 = Frame(window3, relief = RAISED)
+        sres_lbl.configure(text = txt)
         p_table = htmp_calc()
-        f = Figure(figsize = (10,10))
-        f.suptitle('Heatmap for 5 minutes')
+        f.clf()
         a = f.add_subplot(111)
         sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
-        canvas = FigureCanvasTkAgg(f, master = res_win)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side = BOTTOM, fill = BOTH, expand = True)
-        toolbar = NavigationToolbar2Tk(canvas, res_win)
-        toolbar.update()
-        canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
-        res_win.mainloop()
         
     def clicked3():
         global st_time ,end_time
@@ -122,7 +126,7 @@ def window3():
         end_time = etime_cmb3.get()
         begin()
         
-    begin_bt = Button(window3, text = 'Begin Calculation', command = clicked3).grid(column = 4, row = 9)
+    begin_bt = Button(window3, text = 'Begin Calculation', command = clicked3).pack(side = BOTTOM)
     window3.mainloop()
         
 #%%
@@ -159,7 +163,6 @@ def htmp_calc():
     result = dataset[' Result']
     hourly_distribution = []
     result_hrly = []
-    hrly_diff = []
     onehr = pd.to_timedelta('1:00:00')
     starttime = dt_relevant[i_bn]
     rel_rge = (dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(st_time,'%Y-%m-%d %H:%M:%S')).seconds/3600
