@@ -33,7 +33,7 @@ st_date = dt.datetime.now()
 end_date = dt.datetime.now()
 st_time = dt.datetime.now()
 end_time = dt.datetime.now()
-availabililty_hrly = []
+availability_hrly = []
 quality_hrly = []
 OEE_hrly = []
 performance_hrly = []
@@ -41,14 +41,14 @@ hours = []
 
 #%%
 
-def calc_duration_parameters():
-    global dt_relevant, i_bn, i_end, cycle_time
+def calc_duration_parameters(st, et):
+    global dt_relevant, i_bn
     dates = dataset['Date']
     time = dataset['Time']
     result = dataset[' Result']
     DT_column = pd.Series([dt.datetime.strptime(dates[i] + ' '+ time[i], '%d-%m-%Y %H:%M:%S') for i in range(len(dates))])
-    i_bn = np.where(DT_column > st_time)[0][0]
-    i_end = np.where(DT_column > end_time)[0][0]
+    i_bn = np.where(DT_column > st)[0][0]
+    i_end = np.where(DT_column > et)[0][0]
     dt_relevant = DT_column[i_bn:i_end]
     result_relevant = result[i_bn:i_end]
     time_differences = np.asarray([dt_relevant[i+1]-dt_relevant[i] for i in (dt_relevant.index[0] + np.arange(len(dt_relevant)-1))])
@@ -56,16 +56,15 @@ def calc_duration_parameters():
     'This line finds the most common time difference which can be taken as the ideal time required to produce one set of LH and RH recliners'
     cycle_time = (max_rep[1][0]).total_seconds()/4
     unplanned_dt = time_differences.sum(initial = pd.to_timedelta('00:00:00'), where = (time_differences > pd.to_timedelta('00:01:00')))
-    no_ok = Counter(result)['OK']
-    no_ng = Counter(result)['NG']
+    no_ok = Counter(result_relevant)['OK']
+    no_ng = Counter(result_relevant)['NG']
     total_possibility = 24*3600/cycle_time
     availability = 1 - unplanned_dt/pd.to_timedelta('24:00:00')
     quality = no_ok/(no_ok + no_ng)
     OEE = no_ok/total_possibility
     performance = OEE/(availability*quality)
-    txt = 'The required results from the calculations are as follow:' + '\n' + 'OEE: ' + str(OEE) + '\n'+ 'Availability: ' + str(availability) + '\n' + 'Performance: ' + str(performance) + '\n' + 'Quality: ' + str(quality)
-    return txt
-    
+    return availability, quality, OEE, performance
+
 #%%
 def htmp_calc():
     'This cell prepares the data for calculation of hourly quantities'
@@ -81,7 +80,7 @@ def htmp_calc():
         hourly_distribution.append(timear[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
         result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
         
-    
+
     'This part prepares the respective quantities for the generation of a heat map'
     result_minutely = []
     fivemin = pd.to_timedelta('00:05:00')
@@ -106,64 +105,46 @@ def htmp_calc():
     p_table = p_table.reindex(in1)
     p_table.columns = p_table.columns.reindex(in2)[0]
     return p_table    
-#%%
-def RunChartParameters(fr):
-    global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours
-    starttime = pd.to_datetime(st_time)
-    endtime = pd.to_datetime(end_time)
-    required_time = endtime - starttime
- 
-    number = int(abs(int(required_time.seconds/3600)+required_time.days*24))
-    # sres_lbl = Label(window5, text = st_time).grid(column = 1, row = 0)
-    # eres_lbl = Label(window5, text = end_time).grid(column = 0, row =1)
-    
-    hours = np.arange(0,number)
-    hourly_distribution = []
-    result_hrly = []
-    hrly_diff = []
-    blank = 0
-    onehr = pd.to_timedelta('01:00:00')
-    dates = dataset['Date']
-    time = dataset['Time']
-    result = dataset[' Result']
-    timear = pd.Series([dt.datetime.strptime(dates[i] + ' '+ time[i], '%d-%m-%Y %H:%M:%S') for i in range(len(dates))])
-    
-    for i in range(number):
-        blank = (np.where(timear > starttime+(i)*(onehr))[0][0])
-        hourly_distribution.append(timear[np.where(timear > (starttime+i*(onehr)))[0][0]:(np.where(timear > (starttime+(i+1)*(onehr)))[0][0]-1)])
-        result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
-        hrly_diff.append([hourly_distribution[i][j+1] - hourly_distribution[i][j] for j in range(blank, blank + len(hourly_distribution[i])-1)])
-    
-    'This cell calculates the most important quantities relating to the final calculations'
-    hrly_diff = np.array(hrly_diff)
-    hrly_unplanned = []
-    for i in range(len(hourly_distribution)):
-        hrly_unplanned.append(np.array(hrly_diff[i]).sum(initial = pd.to_timedelta('00:00:00'), where  = (np.array(hrly_diff[i]) > pd.to_timedelta('00:01:00'))))
-    ok_hrly = np.array([Counter(result_hrly[i])['OK'] for i in range(len(result_hrly))])
-    ng_hrly = np.array([Counter(result_hrly[i])['NG'] for i in range(len(result_hrly))])
-    total_possibility = 24*3600/cycle_time
-    hrly_possibility = total_possibility/24;
-    
-    'This cell calculates all the final hourly quantities'
-    availability_hrly = 1 - np.divide(hrly_unplanned,pd.to_timedelta('1:00:00'))
-    quality_hrly = np.divide(ok_hrly,(ok_hrly + ng_hrly))
-    OEE_hrly = ok_hrly / hrly_possibility
-    performance_hrly = OEE_hrly/(availability_hrly*quality_hrly)
-    
-    Radiobutton(fr, text="Availability",command = availability_plot).pack()
-    Radiobutton(fr, text="Quality", command = quality_plot).pack()
 
-    Radiobutton(fr, text="OEE", command = OEE_plot).pack()
+#%%
+def RunChartParameters(win):
+    global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
+    st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
+    et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
+    hours = np.arange(start = st.hour+1, stop = et.hour+1, step = 1)
+    no_hrs = int((et - st).seconds/3600)
     
-    Radiobutton(fr, text="Performance", command = performance_plot).pack()
+    for i in range(int(no_hrs)):
+        hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = 1))
+        availability_hrly.append(hr_res[0])
+        quality_hrly.append(hr_res[1])
+        OEE_hrly.append(hr_res[2])
+        performance_hrly.append(hr_res[3])
+        st = st+dt.timedelta(hours = 1)
+        
+    availability_hrly = np.array(availability_hrly)
+    quality_hrly = np.array(quality_hrly)
+    OEE_hrly = np.array(OEE_hrly)
+    performance_hrly = np.array(performance_hrly)
+    
+    fr = Frame(win, relief = RAISED)
+    fr.pack(fill = X)
+    av = Radiobutton(fr, text="Availability",command = availability_plot)
+    av.pack(side = LEFT, padx = 5, pady = 5)
+    ql = Radiobutton(fr, text="Quality", command = quality_plot)
+    ql.pack(side = LEFT, padx = 5, pady = 5)
+    oee = Radiobutton(fr, text="OEE", command = OEE_plot)
+    oee.pack(side = LEFT, padx = 5, pady = 5)
+    perf = Radiobutton(fr, text="Performance", command = performance_plot)
+    perf.pack(side = LEFT, padx = 5, pady = 5)
 
 #%%    
 def availability_plot():
     availability_plot = Tk()
     availability_plot.geometry('1200x1200')
     availability_plot.title('Availability Run Chart')
-    avg = availability_hrly.mean()* np.ones(hours.shape)
-    std = availability_hrly.std()* np.ones(hours.shape)
+    avg = availability_hrly.mean()* np.ones(no_hrs)
+    std = availability_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -200,8 +181,8 @@ def quality_plot():
     quality_plot = Tk()
     quality_plot.geometry('1200x1200')
     quality_plot.title('Quality Run Chart')
-    avg = quality_hrly.mean()* np.ones(hours.shape)
-    std = quality_hrly.std()* np.ones(hours.shape)
+    avg = quality_hrly.mean()* np.ones(no_hrs)
+    std = quality_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -238,8 +219,8 @@ def OEE_plot():
     OEE_plot = Tk()
     OEE_plot.geometry('1200x1200')
     OEE_plot.title('OEE Run Chart')
-    avg = OEE_hrly.mean()* np.ones(hours.shape)
-    std = OEE_hrly.std()* np.ones(hours.shape)
+    avg = OEE_hrly.mean()* np.ones(no_hrs)
+    std = OEE_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -277,8 +258,8 @@ def performance_plot():
     performance_plot = Tk()
     performance_plot.geometry('1200x1200')
     performance_plot.title('OEE Run Chart')
-    avg = performance_hrly.mean()* np.ones(hours.shape)
-    std = performance_hrly.std()* np.ones(hours.shape)
+    avg = performance_hrly.mean()* np.ones(no_hrs)
+    std = performance_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -309,18 +290,34 @@ def performance_plot():
     toolbar.update()
     canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
     performance_plot.mainloop()
-#%%
-def clicked1():
-    file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
-    global dataset 
-    dataset = pd.read_csv(file)
-    "var_list = np.asarray([i for i in dataset.columns.values if(i!=' ' and not(re.search(pattern,i)))])"
-    window2()
 
+#%%
+'Defining the GUI'
+def main():
+    window1 = Tk()
+    window1.title('Lear Remote Internship')
+    window1.geometry('500x300')
+    fr1 = Frame(window1, relief = RAISED, borderwidth = 1, height = 300)
+    fr1.pack(pady = 50)
+    wel_lb1 = Label(fr1, text = 'Welcome', font = ('latin modern roman',20))
+    wel_lb1.pack(side = TOP, pady = 20)
+    ch_lbl1 = Label(fr1, text = 'Choose the input data file', font = ('latin modern roman',15))
+    ch_lbl1.pack(side = LEFT, padx = 20, pady = 10)
+    
+    def clicked1():
+        file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
+        global dataset 
+        dataset = pd.read_csv(file)
+        window1.destroy()
+        window2()
+        
+    ch_bt1 = Button(fr1, text = 'Choose File', command = clicked1)
+    ch_bt1.pack(side = LEFT, padx = 10, pady = 10)
+    window1.mainloop()
+    
 #%%
 def window2():
     global date
-    window1.destroy()
     date = dataset['Date']
     #date = [dt.datetime.strptime(str(date[i]), '%d-%m-%Y') for i in range(len(date))]
     window2 = Tk()
@@ -350,6 +347,12 @@ def window2():
         window2.destroy()
         window3()
         
+    def bkclick():
+        window2.destroy()
+        main()        
+        
+    back_bt = Button(fr2, text = 'Back', command = bkclick) 
+    back_bt.pack(side = LEFT, padx = 10)
     time_bt = Button(fr2, text = 'Proceed to time range selection', command = clicked2)
     time_bt.pack(side = BOTTOM, pady = 5)
     window2.mainloop()
@@ -363,7 +366,7 @@ def window3():
     s_dti = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))
     e_dti = tuple(pd.date_range(start = e_st, end = e_et, freq = '1H'))
     window3 = Tk()
-    window3.geometry('850x300')
+    window3.geometry('1000x300')
     frame1 = Frame(window3, relief = RAISED)
     frame1.pack(fill = X)
     window3.title('Time selection') 
@@ -378,66 +381,53 @@ def window3():
     etime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
     etime_cmb3['values'] = e_dti
     etime_cmb3.current(0)
-    frame2= Frame(window3, relief = RAISED)
+    frame2= Frame(window3, relief = RAISED, borderwidth = 2, height = 100)
     frame2.pack(fill = X)
-    sres_lbl = Label(frame2, text = '')
+    sres_lbl = Label(frame2, text = '', font = ('Arial Bold', 30))
     sres_lbl.pack(fill = BOTH, padx = 5, pady = 5)
-    frame3 = Frame(window3, relief = RAISED)
-    frame3.pack(fill = BOTH)
-
+    
     def plotmap(p_table):
-        frame3 = Frame(window3, relief = RAISED)
-        frame3.pack(fill = BOTH)
+        plwindow = Tk()
         f = Figure(figsize = (10,10))
         f.clf()
         f.suptitle('Heatmap for 5 minutes')
-        canvas = FigureCanvasTkAgg(f, master = frame3)
+        canvas = FigureCanvasTkAgg(f, master = plwindow)
         canvas.draw()
-        canvas.get_tk_widget().pack(side = BOTTOM, fill = BOTH, expand = True)
-        toolbar = NavigationToolbar2Tk(canvas, frame3)
+        canvas.get_tk_widget().pack(fill = BOTH, expand = True)
+        toolbar = NavigationToolbar2Tk(canvas, plwindow)
         toolbar.update()
         canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
         a = f.add_subplot(111)
         sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
-#%%
+        plwindow.mainloop()
 
     def begin():
-        txt = calc_duration_parameters()
+        txt = calc_duration_parameters(st_time, end_time)
         p_table = htmp_calc()
-        params = Radiobutton(frame2, text = 'Production Quantities', command = sres_lbl.configure(text = txt))
+        params = Radiobutton(frame2, text = 'Production Quantities', command = lambda: sres_lbl.configure(text = txt))
         params.pack(side = LEFT, padx = 10)
-        hm = Radiobutton(frame2, text = 'Heatmap', command = plotmap(p_table))
+        hm = Radiobutton(frame2, text = 'Heatmap', command = lambda : plotmap(p_table))
         hm.pack(side = LEFT, padx = 10)
-        RC = Radiobutton(frame2, text = 'Runcharts', command = RunChartParameters(frame2))
+        RC = Radiobutton(frame2, text = 'Runcharts', command = lambda : RunChartParameters(window3))
         RC.pack(side = LEFT, padx = 10)
-        
-#%%
-
+   
     def clicked3():
-        frame3.destroy()
         global st_time ,end_time
         #stime_lbl4.configure(text = type(stime_cmb4.get))
         st_time = stime_cmb3.get()
         end_time = etime_cmb3.get()
         begin()
         
-#%%
+    def bkclick():
+        window3.destroy()
+        window2()
         
-    begin_bt = Button(frame1, text = 'Begin Calculation', command = clicked3).pack(side = BOTTOM)
+    back_bt = Button(frame1, text = 'Back', command = bkclick)
+    back_bt.pack(side = LEFT, padx = 10)
+    begin_bt = Button(frame1, text = 'Begin Calculation', command = clicked3)
+    begin_bt.pack(side = LEFT, padx = 10)
     window3.mainloop()
         
-
 #%%
-'Defining the GUI'
-window1 = Tk()
-window1.title('Lear Remote Internship')
-window1.geometry('500x300')
-fr1 = Frame(window1, relief = RAISED, borderwidth = 1, height = 300)
-fr1.pack(pady = 50)
-wel_lb1 = Label(fr1, text = 'Welcome', font = ('latin modern roman',20))
-wel_lb1.pack(side = TOP, pady = 20)
-ch_lbl1 = Label(fr1, text = 'Choose the input data file', font = ('latin modern roman',15))
-ch_lbl1.pack(side = LEFT, padx = 20, pady = 10)
-ch_bt1 = Button(fr1, text = 'Choose File', command = clicked1)
-ch_bt1.pack(side = LEFT, padx = 10, pady = 10)
-window1.mainloop()
+if __name__ =='__main__':
+    main()
