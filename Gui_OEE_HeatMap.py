@@ -33,15 +33,10 @@ st_date = dt.datetime.now()
 end_date = dt.datetime.now()
 st_time = dt.datetime.now()
 end_time = dt.datetime.now()
-availability_hrly = []
-quality_hrly = []
-OEE_hrly = []
-performance_hrly = []
-hours = []
-
 #%%
 
 def calc_duration_parameters(st, et):
+    no_hrs = int((pd.to_datetime(et) - pd.to_datetime(st)).seconds/3600)
     global dt_relevant, i_bn
     dates = dataset['Date']
     time = dataset['Time']
@@ -58,7 +53,7 @@ def calc_duration_parameters(st, et):
     unplanned_dt = time_differences.sum(initial = pd.to_timedelta('00:00:00'), where = (time_differences > pd.to_timedelta('00:01:00')))
     no_ok = Counter(result_relevant)['OK']
     no_ng = Counter(result_relevant)['NG']
-    total_possibility = 24*3600/cycle_time
+    total_possibility = no_hrs*3600/cycle_time
     availability = 1 - unplanned_dt/pd.to_timedelta('24:00:00')
     quality = no_ok/(no_ok + no_ng)
     OEE = no_ok/total_possibility
@@ -111,8 +106,13 @@ def RunChartParameters(win):
     global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
     st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
     et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
-    hours = np.arange(start = st.hour+1, stop = et.hour+1, step = 1)
+    hours = pd.date_range(start = st + dt.timedelta(hours = 1), end = et, freq = dt.timedelta(hours=1) )
     no_hrs = int((et - st).seconds/3600)
+    
+    availability_hrly = []
+    quality_hrly = []
+    OEE_hrly = []
+    performance_hrly = []   
     
     for i in range(int(no_hrs)):
         hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = 1))
@@ -401,10 +401,16 @@ def window3():
         sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
         plwindow.mainloop()
 
+    def printout():
+        res = calc_duration_parameters(st_time, end_time)
+        print(res[0])
+        txt = 'The production parameters are given by :' +'\n' + 'Availability : ' + str(res[0]) + '\n' + 'Quality : ' + str(res[1]) + '\n' + 'Performance : ' + str(res[2]) + '\n' + 'OEE : '  + str(res[3]) 
+        sres_lbl.configure(text = txt)
+        
     def begin():
         txt = calc_duration_parameters(st_time, end_time)
         p_table = htmp_calc()
-        params = Radiobutton(frame2, text = 'Production Quantities', command = lambda: sres_lbl.configure(text = txt))
+        params = Radiobutton(frame2, text = 'Production Quantities', command = printout)
         params.pack(side = LEFT, padx = 10)
         hm = Radiobutton(frame2, text = 'Heatmap', command = lambda : plotmap(p_table))
         hm.pack(side = LEFT, padx = 10)
