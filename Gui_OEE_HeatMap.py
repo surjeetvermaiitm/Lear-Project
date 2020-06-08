@@ -22,6 +22,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import seaborn as sns
+import plotly
+import plotly.graph_objs as go
+import plotly.figure_factory as ff
 pattern = r"Unnamed"
 dataset = []
 date = []
@@ -33,6 +36,9 @@ st_date = dt.datetime.now()
 end_date = dt.datetime.now()
 st_time = dt.datetime.now()
 end_time = dt.datetime.now()
+p_table = []
+flag = 0
+res = []
 #%%
 
 def calc_duration_parameters(st, et):
@@ -63,6 +69,7 @@ def calc_duration_parameters(st, et):
 #%%
 def htmp_calc():
     'This cell prepares the data for calculation of hourly quantities'
+    global p_table
     timear = pd.to_datetime(dataset['Date'] + ' ' + dataset['Time'])
     result = dataset[' Result']
     hourly_distribution = []
@@ -102,7 +109,7 @@ def htmp_calc():
     return p_table    
 
 #%%
-def RunChartParameters(win):
+def RunChartParameters(win, plflag):
     global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
     st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
     et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
@@ -129,20 +136,18 @@ def RunChartParameters(win):
     
     fr = Frame(win, relief = RAISED)
     fr.pack(fill = X)
-    av = Radiobutton(fr, text="Availability",command = availability_plot)
+    av = Radiobutton(fr, text="Availability",command = lambda : availability_plot(plflag))
     av.pack(side = LEFT, padx = 5, pady = 5)
-    ql = Radiobutton(fr, text="Quality", command = quality_plot)
+    ql = Radiobutton(fr, text="Quality", command = lambda : quality_plot(plflag))
     ql.pack(side = LEFT, padx = 5, pady = 5)
-    oee = Radiobutton(fr, text="OEE", command = OEE_plot)
+    oee = Radiobutton(fr, text="OEE", command = lambda : OEE_plot(plflag))
     oee.pack(side = LEFT, padx = 5, pady = 5)
-    perf = Radiobutton(fr, text="Performance", command = performance_plot)
+    perf = Radiobutton(fr, text="Performance", command = lambda : performance_plot(plflag))
     perf.pack(side = LEFT, padx = 5, pady = 5)
 
 #%%    
-def availability_plot():
-    availability_plot = Tk()
-    availability_plot.geometry('1200x1200')
-    availability_plot.title('Availability Run Chart')
+def availability_plot(plflag):
+
     avg = availability_hrly.mean()* np.ones(no_hrs)
     std = availability_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
@@ -152,35 +157,51 @@ def availability_plot():
     lower_2 = avg - std*2
     lower_3 = avg - std*3
 
-    f = Figure(figsize=(10,10))
-    a = f.add_subplot(111)
+    if(plflag == 0):
+        availability_plot = Tk()
+        availability_plot.geometry('1200x1200')
+        availability_plot.title('Availability Run Chart')
+        f = Figure(figsize=(10,10))
+        a = f.add_subplot(111)
+        a.plot(hours, availability_hrly, 'b-')
+        a.plot(hours, upper_1 , 'r--')
+        a.plot(hours, upper_2 , 'r--')
+        a.plot(hours, upper_3 , 'r--')
+        a.plot(hours, avg, 'g-')
+        a.plot(hours, lower_1 , 'r--')
+        a.plot(hours, lower_2 , 'r--')
+        a.plot(hours, lower_3 , 'r--')
+        a.set_title('Availability Run Chart', fontsize = 16)
+        a.set_xlabel('Hours')
+        a.set_ylabel('Availability')
+        canvas = FigureCanvasTkAgg(f,availability_plot)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
+        toolbar = NavigationToolbar2Tk(canvas,availability_plot)
+        toolbar.update()
+        canvas._tkcanvas.pack(side = TOP, fill= X, expand=True)
+        availability_plot.mainloop()
+        
+    else:
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(x = hours, y  = availability_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'Avaiability'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_1, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_2, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_3, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
+        fig1.add_trace(go.Scatter(x = hours, y = avg, mode = 'lines', line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_1, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_2, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_3, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
+        fig1.update_layout(title = {'text':'Hourly Availability Plot', 'x':0.5, 'y':0.95, 'xanchor':'center', 'yanchor':'top'}, yaxis_title = 'Availability', xaxis_title = 'Hours',font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
+        fig1 = fig1.to_plotly_json() 
+        plotly.offline.plot(fig1)
+        
+        
 
-    a.plot(hours, availability_hrly, 'b-')
-    a.plot(hours, upper_1 , 'r--')
-    a.plot(hours, upper_2 , 'r--')
-    a.plot(hours, upper_3 , 'r--')
-    a.plot(hours, avg, 'g-')
-    a.plot(hours, lower_1 , 'r--')
-    a.plot(hours, lower_2 , 'r--')
-    a.plot(hours, lower_3 , 'r--')
-    a.set_title('Availability Run Chart', fontsize = 16)
-    a.set_xlabel('Hours')
-    a.set_ylabel('Availability')
-    canvas = FigureCanvasTkAgg(f,availability_plot)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
-   
-    toolbar = NavigationToolbar2Tk(canvas,availability_plot)
-    toolbar.update()
-    canvas._tkcanvas.pack(side = TOP, fill= X, expand=True)
-    availability_plot.mainloop()
     
 #%%
 
-def quality_plot():
-    quality_plot = Tk()
-    quality_plot.geometry('1200x1200')
-    quality_plot.title('Quality Run Chart')
+def quality_plot(plflag):
     avg = quality_hrly.mean()* np.ones(no_hrs)
     std = quality_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
@@ -189,36 +210,52 @@ def quality_plot():
     lower_1 = avg - std*1
     lower_2 = avg - std*2
     lower_3 = avg - std*3
-
-    f = Figure(figsize=(10,10))
-    a = f.add_subplot(111)
-
-    a.plot(hours, quality_hrly, 'b-')
-    a.plot(hours, upper_1 , 'r--')
-    a.plot(hours, upper_2 , 'r--')
-    a.plot(hours, upper_3 , 'r--')
-    a.plot(hours, avg, 'g-')
-    a.plot(hours, lower_1 , 'r--')
-    a.plot(hours, lower_2 , 'r--')
-    a.plot(hours, lower_3 , 'r--')
-    a.set_title('Quality Run Chart', fontsize = 16)
-    a.set_xlabel('Hours')
-    a.set_ylabel('Quality')
-    canvas = FigureCanvasTkAgg(f,quality_plot)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
    
-    toolbar = NavigationToolbar2Tk(canvas,quality_plot)
-    toolbar.update()
-    canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
-    quality_plot.mainloop()
+    if(plflag == 0):
+     quality_plot = Tk()
+     quality_plot.geometry('1200x1200')
+     quality_plot.title('Quality Run Chart')
+     f = Figure(figsize=(10,10))
+     a = f.add_subplot(111)
+     a.plot(hours, quality_hrly, 'b-')
+     a.plot(hours, upper_1 , 'r--')
+     a.plot(hours, upper_2 , 'r--')
+     a.plot(hours, upper_3 , 'r--')
+     a.plot(hours, avg, 'g-')
+     a.plot(hours, lower_1 , 'r--')
+     a.plot(hours, lower_2 , 'r--')
+     a.plot(hours, lower_3 , 'r--')
+     a.set_title('Quality Run Chart', fontsize = 16)
+     a.set_xlabel('Hours')
+     a.set_ylabel('Quality')
+     canvas = FigureCanvasTkAgg(f,quality_plot)
+     canvas.draw()
+     canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)   
+     toolbar = NavigationToolbar2Tk(canvas,quality_plot)
+     toolbar.update()
+     canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
+     quality_plot.mainloop()
+    
+    else:
+     fig1 = go.Figure()
+     fig1.add_trace(go.Scatter(x = hours, y  = quality_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'Quality'))
+     fig1.add_trace(go.Scatter(x = hours, y = upper_1, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
+     fig1.add_trace(go.Scatter(x = hours, y = upper_2, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
+     fig1.add_trace(go.Scatter(x = hours, y = upper_3, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
+     fig1.add_trace(go.Scatter(x = hours, y = avg, line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
+     fig1.add_trace(go.Scatter(x = hours, y = lower_1, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
+     fig1.add_trace(go.Scatter(x = hours, y = lower_2, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
+     fig1.add_trace(go.Scatter(x = hours, y = lower_3, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
+     fig1.update_layout(title = dict(text = 'Hourly Quality Plot', x = 0.5, y = 0.95, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Hours', yaxis_title = 'Quality', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
+     fig1 = fig1.to_plotly_json() 
+     plotly.offline.plot(fig1)
+     
+
 
 #%%
 
-def OEE_plot():
-    OEE_plot = Tk()
-    OEE_plot.geometry('1200x1200')
-    OEE_plot.title('OEE Run Chart')
+def OEE_plot(plflag):
+    
     avg = OEE_hrly.mean()* np.ones(no_hrs)
     std = OEE_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
@@ -227,37 +264,51 @@ def OEE_plot():
     lower_1 = avg - std*1
     lower_2 = avg - std*2
     lower_3 = avg - std*3
-
-    f = Figure(figsize=(10,10))
-    a = f.add_subplot(111)
-
-    a.plot(hours, OEE_hrly, 'b-')
-    a.plot(hours, upper_1 , 'r--')
-    a.plot(hours, upper_2 , 'r--')
-    a.plot(hours, upper_3 , 'r--')
-    a.plot(hours, avg, 'g-')
-    a.plot(hours, lower_1 , 'r--')
-    a.plot(hours, lower_2 , 'r--')
-    a.plot(hours, lower_3 , 'r--')
-    a.set_title('OEE Run Chart', fontsize = 16)
-    a.set_xlabel('Hours')
-    a.set_ylabel('OEE')
     
-    canvas = FigureCanvasTkAgg(f,OEE_plot)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
-   
-    toolbar = NavigationToolbar2Tk(canvas,OEE_plot)
-    toolbar.update()
-    canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
-    OEE_plot.mainloop()
-
+    if(plflag == 0):
+        OEE_plot = Tk()
+        OEE_plot.geometry('1200x1200')
+        OEE_plot.title('OEE Run Chart')    
+        f = Figure(figsize=(10,10))
+        a = f.add_subplot(111)   
+        a.plot(hours, OEE_hrly, 'b-')
+        a.plot(hours, upper_1 , 'r--')
+        a.plot(hours, upper_2 , 'r--')
+        a.plot(hours, upper_3 , 'r--')
+        a.plot(hours, avg, 'g-')
+        a.plot(hours, lower_1 , 'r--')
+        a.plot(hours, lower_2 , 'r--')
+        a.plot(hours, lower_3 , 'r--')
+        a.set_title('OEE Run Chart', fontsize = 16)
+        a.set_xlabel('Hours')
+        a.set_ylabel('OEE')       
+        canvas = FigureCanvasTkAgg(f,OEE_plot)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)       
+        toolbar = NavigationToolbar2Tk(canvas,OEE_plot)
+        toolbar.update()
+        canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
+        OEE_plot.mainloop()
+        
+    else:
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(x = hours, y  = OEE_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'OEE'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_1, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_2, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_3, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
+        fig1.add_trace(go.Scatter(x = hours, y = avg, line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_1, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_2, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_3, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
+        fig1.update_layout(title = {'text':"Hourly OEE plot", 'x':0.5, 'y':0.95,'xanchor':'center', 'yanchor':'top'}, xaxis_title = 'Hours', yaxis_title = 'Availability', font = dict(family = 'Courier New, monospace', color = '#7f7f7f', size = 20))
+        fig1 = fig1.to_plotly_json() 
+        plotly.offline.plot(fig1)
+        
+        
 #%%
 
-def performance_plot():
-    performance_plot = Tk()
-    performance_plot.geometry('1200x1200')
-    performance_plot.title('OEE Run Chart')
+def performance_plot(plflag):
+    
     avg = performance_hrly.mean()* np.ones(no_hrs)
     std = performance_hrly.std()* np.ones(no_hrs)
     upper_1 = avg + std*1
@@ -267,30 +318,45 @@ def performance_plot():
     lower_2 = avg - std*2
     lower_3 = avg - std*3
 
-    f = Figure(figsize=(10,10))
-    a = f.add_subplot(111)
-
-    a.plot(hours, performance_hrly, 'b-')
-    a.plot(hours, upper_1 , 'r--')
-    a.plot(hours, upper_2 , 'r--')
-    a.plot(hours, upper_3 , 'r--')
-    a.plot(hours, avg, 'g-')
-    a.plot(hours, lower_1 , 'r--')
-    a.plot(hours, lower_2 , 'r--')
-    a.plot(hours, lower_3 , 'r--')
-    a.set_title('Performance Run Chart', fontsize = 16)
-    a.set_xlabel('Hours')
-    a.set_ylabel('Performance')
-    
-    canvas = FigureCanvasTkAgg(f,performance_plot)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
-   
-    toolbar = NavigationToolbar2Tk(canvas,performance_plot)
-    toolbar.update()
-    canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
-    performance_plot.mainloop()
-
+    if(plflag == 0):
+        performance_plot = Tk()
+        performance_plot.geometry('1200x1200')
+        performance_plot.title('OEE Run Chart')
+        f = Figure(figsize=(10,10))
+        a = f.add_subplot(111)    
+        a.plot(hours, performance_hrly, 'b-')
+        a.plot(hours, upper_1 , 'r--')
+        a.plot(hours, upper_2 , 'r--')
+        a.plot(hours, upper_3 , 'r--')
+        a.plot(hours, avg, 'g-')
+        a.plot(hours, lower_1 , 'r--')
+        a.plot(hours, lower_2 , 'r--')
+        a.plot(hours, lower_3 , 'r--')
+        a.set_title('Performance Run Chart', fontsize = 16)
+        a.set_xlabel('Hours')
+        a.set_ylabel('Performance')       
+        canvas = FigureCanvasTkAgg(f,performance_plot)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)       
+        toolbar = NavigationToolbar2Tk(canvas,performance_plot)
+        toolbar.update()
+        canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
+        performance_plot.mainloop()
+        
+    else:
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(x = hours, y  = performance_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'performance'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_1, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_2, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
+        fig1.add_trace(go.Scatter(x = hours, y = upper_3, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
+        fig1.add_trace(go.Scatter(x = hours, y = avg, line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_1, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_2, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
+        fig1.add_trace(go.Scatter(x = hours, y = lower_3, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
+        fig1.update_layout(title = dict(text = 'Hourly Performance Plot', x = 0.5, y = 0.95, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Hours', yaxis_title = 'Performance', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
+        fig1 = fig1.to_plotly_json() 
+        plotly.offline.plot(fig1)
+        
 #%%
 'Defining the GUI'
 def main():
@@ -359,6 +425,7 @@ def window2():
         
 #%%
 def window3():
+    global flag
     s_st = (st_date + dt.timedelta(0))
     s_et = (st_date + dt.timedelta(hours=23))
     e_st = (end_date + dt.timedelta(0))
@@ -385,6 +452,23 @@ def window3():
     frame2.pack(fill = X)
     sres_lbl = Label(frame2, text = '', font = ('Arial Bold', 30))
     sres_lbl.pack(fill = BOTH, padx = 5, pady = 5)
+    flag = 0
+    
+    def plotinmap():
+        fig= go.Figure()
+        fc = ['black','white']
+        annot_text = np.array([str(p_table.values[i][j]) for i in range(np.shape(p_table.values)[0]) for j in range(np.shape(p_table.values)[1])]).reshape(np.shape(p_table.values))
+        fig = ff.create_annotated_heatmap(z = p_table.values, x = list(p_table.columns), y = list(p_table.index.values), annotation_text = annot_text, colorscale= 'rdylgn', font_colors = fc)
+        fig.update_layout(title = dict(text = 'Heat Map depicting produced quantites every 5 minutes', x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
+        fig = fig.to_plotly_json()
+        plotly.offline.plot(fig)
+    
+        
+    def inplot():
+        hm = Radiobutton(frame2, text = 'Heatmap', command = plotinmap)
+        RC = Radiobutton(frame2, text = 'Runcharts', command = lambda : RunChartParameters(window3, 1))    
+        hm.pack(side = BOTTOM)
+        RC.pack(side = BOTTOM)
     
     def plotmap(p_table):
         plwindow = Tk()
@@ -401,21 +485,26 @@ def window3():
         sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
         plwindow.mainloop()
 
-    def printout():
-        res = calc_duration_parameters(st_time, end_time)
-        print(res[0])
+    def printout(res):
         txt = 'The production parameters are given by :' +'\n' + 'Availability : ' + str(res[0]) + '\n' + 'Quality : ' + str(res[1]) + '\n' + 'Performance : ' + str(res[2]) + '\n' + 'OEE : '  + str(res[3]) 
         sres_lbl.configure(text = txt)
         
     def begin():
-        txt = calc_duration_parameters(st_time, end_time)
+        global flag, res
+        res = calc_duration_parameters(st_time, end_time)
         p_table = htmp_calc()
-        params = Radiobutton(frame2, text = 'Production Quantities', command = printout)
-        params.pack(side = LEFT, padx = 10)
+        sres_lbl.configure(text = '')
+        params = Radiobutton(frame2, text = 'Production Quantities', command = lambda : printout(res)) 
         hm = Radiobutton(frame2, text = 'Heatmap', command = lambda : plotmap(p_table))
-        hm.pack(side = LEFT, padx = 10)
-        RC = Radiobutton(frame2, text = 'Runcharts', command = lambda : RunChartParameters(window3))
-        RC.pack(side = LEFT, padx = 10)
+        RC = Radiobutton(frame2, text = 'Runcharts', command = lambda : RunChartParameters(window3, 0))
+        ip = Radiobutton(frame2, text = 'View Interactive Plot in browser', command = inplot)
+        if(flag == 0):
+            params.pack(side = LEFT, padx = 10)
+            hm.pack(side = LEFT, padx = 10)
+            RC.pack(side = LEFT, padx = 10)
+            ip.pack(side = LEFT, padx = 10)
+            flag = 1
+        
    
     def clicked3():
         global st_time ,end_time
