@@ -406,6 +406,8 @@ def window3():
     etime_cmb3.current(0)
     frame2= Frame(window3, relief = RAISED, borderwidth = 2, height = 20)
     frame2.pack(fill = X)
+    frame1_1= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
+    frame1_1.pack(fill = X)
     sres_lbl = Label(frame2, text = '', font = ('Arial Bold', 18))
     sres_lbl.pack(fill = BOTH, padx = 5, pady = 5)
     frame3= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
@@ -429,11 +431,14 @@ def window3():
     
         
     def inplot():
-
-        hm = Button(frame2, text = 'Heatmap',style = 'W.TButton', command = plotinmap)
-        RC = Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3, 1))    
-        hm.pack(side = BOTTOM)
-        RC.pack(side = BOTTOM)
+        for widget in frame3.winfo_children():
+            widget.destroy()
+        for widget in frame1_1.winfo_children():
+            widget.destroy()
+        hm = Button(frame1_1, text = 'Heatmap',style = 'W.TButton', command = plotinmap)
+        RC = Button(frame1_1, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3, 1))    
+        hm.pack(side = LEFT,padx = 5, pady = 5)
+        RC.pack(side = LEFT,padx = 5, pady = 5)
         
     def plotmap(p_table):
         plwindow = Tk()
@@ -486,6 +491,8 @@ def window3():
     def RunChartParameters(win,plflag):
         for widget in frame3.winfo_children():
             widget.destroy()
+        for widget in frame1_1.winfo_children():
+            widget.destroy()
         global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
         st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
         et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
@@ -509,7 +516,8 @@ def window3():
         quality_hrly = np.array(quality_hrly)
         OEE_hrly = np.array(OEE_hrly)
         performance_hrly = np.array(performance_hrly)
-        
+        sres_lbl = Label(frame3, text = 'Please select required parameter:', font = ('Arial Bold', 18))
+        sres_lbl.pack(fill = BOTH, padx = 5, pady = 5)
 
         av = Button(frame3, text="Availability",style = 'W.TButton',command = lambda : availability_plot(plflag))
         av.pack(side = LEFT, padx = 5, pady = 5)
@@ -529,6 +537,8 @@ def window3():
         global flag, res
         res = calc_duration_parameters(st_time, end_time)
         sres_lbl.configure(text = '')
+        for widget in frame1_1.winfo_children():
+            widget.destroy()
         for widget in frame3.winfo_children():
             widget.destroy()
         for widget in frame4.winfo_children():
