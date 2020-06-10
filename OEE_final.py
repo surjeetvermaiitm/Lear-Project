@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# sed q#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Fri May 29 14:21:52 2020
@@ -21,6 +21,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+import matplotlib as mlb
 import seaborn as sns
 import plotly
 import plotly.graph_objs as go
@@ -107,42 +108,6 @@ def htmp_calc():
     p_table = p_table.reindex(in1)
     p_table.columns = p_table.columns.reindex(in2)[0]
     return p_table        
-
-#%%
-def RunChartParameters(win):
-    frame3.grid_forget()
-    global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
-    st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
-    et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
-    hours = pd.date_range(start = st + dt.timedelta(hours = 1), end = et, freq = dt.timedelta(hours=1) )
-    no_hrs = int((et - st).seconds/3600)
-    
-    availability_hrly = []
-    quality_hrly = []
-    OEE_hrly = []
-    performance_hrly = []   
-    
-    for i in range(int(no_hrs)):
-        hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = 1))
-        availability_hrly.append(hr_res[0])
-        quality_hrly.append(hr_res[1])
-        OEE_hrly.append(hr_res[2])
-        performance_hrly.append(hr_res[3])
-        st = st+dt.timedelta(hours = 1)
-        
-    availability_hrly = np.array(availability_hrly)
-    quality_hrly = np.array(quality_hrly)
-    OEE_hrly = np.array(OEE_hrly)
-    performance_hrly = np.array(performance_hrly)
-    
-    av = Radiobutton(frame3, text="Availability",command = availability_plot)
-    av.pack(side = LEFT, padx = 5, pady = 5)
-    ql = Radiobutton(frame3, text="Quality", command = quality_plot)
-    ql.pack(side = LEFT, padx = 5, pady = 5)
-    oee = Radiobutton(frame3, text="OEE", command = OEE_plot)
-    oee.pack(side = LEFT, padx = 5, pady = 5)
-    perf = Radiobutton(frame3, text="Performance", command = performance_plot)
-    perf.pack(side = LEFT, padx = 5, pady = 5)
 
 #%%    
 def availability_plot(plflag):
@@ -393,6 +358,7 @@ def window2():
     end_cmb2.pack(side = LEFT, padx = 5)
     end_cmb2['values'] = tuple(np.unique(date))
     end_cmb2.current(0)
+ 
     
     def clicked2():
         global st_date, end_date
@@ -446,6 +412,11 @@ def window3():
     frame3.pack(fill = X)
     frame4= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
     frame4.pack(fill = X)
+    style = Style() 
+    style.configure('W.TButton', font =
+       ('Century', 10, 'bold'), 
+        foreground = 'red', background = '#006400') 
+ 
 
     def plotinmap():
         fig= go.Figure()
@@ -458,8 +429,9 @@ def window3():
     
         
     def inplot():
-        hm = Radiobutton(frame2, text = 'Heatmap', command = plotinmap)
-        RC = Radiobutton(frame2, text = 'Runcharts', command = lambda : RunChartParameters(window3, 1))    
+
+        hm = Button(frame2, text = 'Heatmap',style = 'W.TButton', command = plotinmap)
+        RC = Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3, 1))    
         hm.pack(side = BOTTOM)
         RC.pack(side = BOTTOM)
         
@@ -490,18 +462,21 @@ def window3():
         P_loss = (1-res[3])*(1-res[2])/(3-res[0]-res[1]-res[3])
         Q_loss = (1-res[1])*(1-res[2])/(3-res[0]-res[1]-res[3])
         
+        backend_ =  mlb.get_backend() 
+        mlb.use("Agg") 
+        
         labels = ["OEE", 'UD_Loss', 'P_Loss','Q_Loss']
         values = [OEE*360, UD_loss*360, P_loss*360, Q_loss*360]
     
         colors = ['Green', 'Yellow', 'Red', 'DarkRed'] 
-        explode =(0,0.1,0,0.1) 
+        explode =(0,0.1,0,0.1)
         
-        plt.ioff()
-        f = matplotlib.pyplot.figure(figsize=(24,12))
+        f = plt.figure(figsize=(24,12))
         a = f.add_subplot(111)
-        # fig, ax1 = plt.subplots(figsize = (24,12)) 
         a.pie(values, explode = explode, colors=colors, startangle=90, autopct='%.1f%%', shadow = True) 
-        a.legend(labels, loc = 'upper right')  
+        a.legend(labels, loc = 'upper right')
+        
+        mlb.use(backend_)
         
         canvas = FigureCanvasTkAgg(f,frame4)
         canvas.draw()
@@ -535,13 +510,14 @@ def window3():
         OEE_hrly = np.array(OEE_hrly)
         performance_hrly = np.array(performance_hrly)
         
-        av = Radiobutton(frame3, text="Availability",command = lambda : availability_plot(plflag))
+
+        av = Button(frame3, text="Availability",style = 'W.TButton',command = lambda : availability_plot(plflag))
         av.pack(side = LEFT, padx = 5, pady = 5)
-        ql = Radiobutton(frame3, text="Quality", command = lambda : quality_plot(plflag))
+        ql = Button(frame3, text="Quality",style = 'W.TButton', command = lambda : quality_plot(plflag))
         ql.pack(side = LEFT, padx = 5, pady = 5)
-        oee = Radiobutton(frame3, text="OEE", command = lambda : OEE_plot(plflag))
+        oee =  Button(frame3, text="OEE",style = 'W.TButton', command = lambda : OEE_plot(plflag))
         oee.pack(side = LEFT, padx = 5, pady = 5)
-        perf = Radiobutton(frame3, text="Performance", command = lambda : performance_plot(plflag))
+        perf = Button(frame3, text="Performance",style = 'W.TButton', command = lambda : performance_plot(plflag))
         perf.pack(side = LEFT, padx = 5, pady = 5) 
         
     def printout():
@@ -559,11 +535,11 @@ def window3():
             widget.destroy()
         txt = calc_duration_parameters(st_time, end_time)
         p_table = htmp_calc()
-        params = Radiobutton(frame2, text = 'Production Quantities', command = lambda: printout())
-        hm = Radiobutton(frame2, text = 'Heatmap', command = lambda : plotmap(p_table))
-        RC = Radiobutton(frame2, text = 'Runcharts', command = lambda : RunChartParameters(window3,0))
-        Piechart = Radiobutton(frame2, text = 'Pie Chart', command = lambda: PieChart(window3))
-        ip = Radiobutton(frame2, text = 'View Interactive Plot in browser', command = inplot)
+        params = Button(frame2, text = 'Production Quantities',style = 'W.TButton', command = lambda: printout())
+        hm = Button(frame2, text = 'Heatmap',style = 'W.TButton', command = lambda : plotmap(p_table))
+        RC = Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3,0))
+        Piechart = Button(frame2, text = 'Pie Chart', style = 'W.TButton',command = lambda: PieChart(window3))
+        ip = Button(frame2, text = 'View Interactive Plot in browser',style = 'W.TButton', command = inplot)
         if(flag == 0):
             params.pack(side = LEFT, padx = 10)
             hm.pack(side = LEFT, padx = 10)
@@ -583,9 +559,9 @@ def window3():
         window3.destroy()
         window2()
         
-    back_bt = Button(frame1, text = 'Back', command = bkclick)
+    back_bt = Button(frame1, text = 'Back',style = 'W.TButton', command = bkclick)
     back_bt.pack(side = LEFT, padx = 10)
-    begin_bt = Button(frame1, text = 'Begin Calculation', command = clicked3)
+    begin_bt = Button(frame1, text = 'Begin Calculation',style = 'W.TButton', command = clicked3)
     begin_bt.pack(side = LEFT, padx = 10)
     window3.mainloop()
         
