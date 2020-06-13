@@ -116,7 +116,7 @@ def htmp_calc(l = None):
     result_hrly = []
     onehr = pd.to_timedelta('1:00:00')
     starttime = dt_relevant[i_bn]
-    rel_rge = (dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(st_time,'%Y-%m-%d %H:%M:%S')).seconds/3600
+    rel_rge = (end_time - st_time).seconds/3600
     
     for i in range(int(rel_rge)):
         hourly_distribution.append(timear[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
@@ -131,8 +131,8 @@ def htmp_calc(l = None):
         
     'This cell calculates the most important quantities relating to the final calculations'    
     ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
-    st2 = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') + dt.timedelta(hours = 1)
-    et2 = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') - dt.timedelta(hours = 1)
+    st2 = st_time + dt.timedelta(hours = 1)
+    et2 = end_time - dt.timedelta(hours = 1)
     h1 = np.array([[str(i)]*12 for i in pd.date_range(st_time, et2, freq = '1H')]).flatten()
     h2 = np.array([[str(i)]*12 for i in pd.date_range(st2, end_time, freq = '1H')]).flatten()
     m1 = np.arange(5,65,5)
@@ -388,6 +388,7 @@ def main():
         dataset = pd.read_csv(file)
         dataset['Date time'] = pd.Series([dt.datetime.strptime((dataset['Date'][i]+' '+dataset['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset.index])
         dataset = dataset.sort_values(by = 'Date time')
+        dataset.index = np.arange(len(dataset))
         calc_cycle_time()
         
         if {'Date','Time','Result','Line ID'}.issubset(dataset.columns):
@@ -659,14 +660,16 @@ def window3():
     def clicked3(l = None):
         global st_time ,end_time
         st_time = stime_cmb3.get()
+        st_time = dt.datetime.strptime(st_time,'%Y-%m-%d %H:%M:%S')
         end_time = etime_cmb3.get()
+        end_time = dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S')
         timear = dataset['Date time']
         if st_time>end_time:
             mb.showerror("Date Error", "End time must be greater than start time")
-        elif pd.to_datetime(st_time) < timear[0] - pd.to_timedelta('01:00:00'):
+        elif st_time < timear[0] - pd.to_timedelta('01:00:00'):
             mb.showerror("Date Error", "Start time is out of range")
             window3.mainloop()
-        elif pd.to_datetime(end_time)> timear.iloc[-1]:
+        elif end_time> timear.iloc[-1]:
             mb.showerror("Date Error", "End time is out of range")
             window3.mainloop()
         begin(l)
