@@ -626,8 +626,8 @@ def window3():
         perf = ttk.Button(frame3, text="Performance",style = 'W.TButton', command = lambda : performance_plot(plflag))
         perf.pack(side = LEFT, padx = 5, pady = 5) 
         
-    def printout():
-        res = calc_duration_parameters(st_time, end_time)
+    def printout(l):
+        res = calc_duration_parameters(st_time, end_time,l)
         txt = 'The production parameters are given by :' +'\n' + 'Availability : ' + str(res[0]) + '\n' + 'Quality : ' + str(res[1]) + '\n' + 'Performance : ' + str(res[3]) + '\n' + 'OEE : '  + str(res[2]) #AQOP
         sres_lbl.configure(text = txt)
         
@@ -645,7 +645,7 @@ def window3():
 
         p_table = htmp_calc(l)
         PieChart(window3)
-        params = ttk.Button(frame2, text = 'Production Quantities',style = 'W.TButton', command = lambda: printout())
+        params = ttk.Button(frame2, text = 'Production Quantities',style = 'W.TButton', command = lambda: printout(l))
         hm = ttk.Button(frame2, text = 'Heatmap',style = 'W.TButton', command = lambda : plotmap(p_table))
         RC = ttk.Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3,0,l))
         ip = ttk.Button(frame2, text = 'View Interactive Plot in browser',style = 'W.TButton', command = inplot)
