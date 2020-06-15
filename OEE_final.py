@@ -547,30 +547,36 @@ def window3():
         RC.pack(side = LEFT,padx = 5, pady = 5)
         
     def plotmap(p_table):
-        plwindow = tk.ThemedTk()
-        plwindow.get_themes()
-        plwindow.set_theme('clearlooks')
-        plwindow.geometry('1000x1000')
-        plwindow.configure(background= '#ffc3a0')
-        plwindow.title('Heat Map')
         
-        f = Figure(figsize = (10,10))
-        f.clf()
-        f.suptitle('Heatmap for 5 minutes')
-        canvas = FigureCanvasTkAgg(f, master = plwindow)
-        canvas.get_tk_widget().pack(fill = BOTH, expand = True)
-
-        canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
-        a = f.add_subplot(111)
-        Heatmap = sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+        no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
+        if(no_hrs>48):
+            Msg = mb.askyesno(title='Warning', message= 'The selected time range is very large \nHeatmap would not be clear \nWould you still want to continue?') 
+            print(Msg)
+        elif(no_hrs<=48):
+            Msg = True
         
-        # image_window = ScrollableImage(plwindow, image=img, scrollbarwidth=6, 
-        #                        width=1000, height=1000)
-        # image_window.pack()
+        print(Msg)
         
-        
-        
-        plwindow.mainloop()
+        if(Msg == True): 
+            print('Hare Krishna')
+            plwindow = tk.ThemedTk()
+            plwindow.get_themes()
+            plwindow.set_theme('clearlooks')
+            plwindow.geometry('1000x1000') 
+            plwindow.configure(background= '#ffc3a0')
+            plwindow.title('Heat Map')
+                    
+            f = Figure(figsize = (10,10))
+            f.clf()
+            f.suptitle('Heatmap for 5 minutes')
+            canvas = FigureCanvasTkAgg(f, master = plwindow)
+            canvas.get_tk_widget().pack(fill = BOTH, expand = True)
+    
+            canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
+            a = f.add_subplot(111)
+            Heatmap = sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+            
+            plwindow.mainloop()
     
     def PieChart(win):
         for widget in frame4.winfo_children():
