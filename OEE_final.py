@@ -11,8 +11,8 @@ from tkinter.ttk import *
 from tkinter import ttk
 from ttkthemes import themed_tk as tk
 from tkinter import filedialog
-from os import path
 from collections import Counter
+import time
 import re
 import pandas as pd
 import numpy as np
@@ -29,9 +29,12 @@ import plotly
 import plotly.graph_objs as go
 import plotly.figure_factory as ff
 from tkinter import messagebox as mb
+# from ScrollableImage import ScrollableImage   
 pattern = r"Unnamed"
 dataset = []
-date = []
+dataA = []
+dataB = []
+cycle_time = 0
 dt_relevant = []
 i_bn = 0
 i_end = 0
@@ -40,53 +43,94 @@ st_date = dt.datetime.now()
 end_date = dt.datetime.now()
 st_time = dt.datetime.now()
 end_time = dt.datetime.now()
-p_table = []
+p_table = []  
 flag = 0
 res = []
+
 #%%
 
-def calc_duration_parameters(st, et):
-    no_hrs = int((pd.to_datetime(et) - pd.to_datetime(st)).seconds/3600)
-    global dt_relevant, i_bn
-    dates = dataset['Date']
-    time = dataset['Time']
-    result = dataset['Result']
-    DT_column = pd.Series([dt.datetime.strptime(dates[i] + ' '+ time[i], '%d-%m-%Y %H:%M:%S') for i in range(len(dates))])
+def calc_cycle_time():
+    global dataA, dataB, cycle_time
+    line = dataset['Line ID']
+    Ain = np.where(line == 'A')[0]
+    Bin = np.where(line == 'B')[0]
+    dataA = dataset.iloc[Ain]
+    dataA.index = np.arange(len(Ain))
+    dataB = dataset.iloc[Bin]
+    dataB.index = np.arange(len(Bin))
+    tdA = np.asarray([abs(dataA['Date time'][i+1]-dataA['Date time'][i]) for i in dataA.index[:-1]])
+    tdB = np.asarray([abs(dataB['Date time'][i+1]-dataB['Date time'][i]) for i in dataB.index[:-1]])
+    td = np.concatenate((tdA, tdB), axis = 0)
+    max_rep = Counter(td).most_common(4)
+    cycle_time = max_rep[1][0].total_seconds()/4
+
+#%%
+def calc_duration_parameters(st, et, l = None):
+    no_hrs = int((et-st).seconds/3600)+24*(et-st).days
+    global dt_relevant, i_bn, i_end, unplanned_dt
+    
+    if(l == None):
+        data = dataset
+         
+    if(l == 'A'):
+        data = dataA
+        
+    if(l=='B'):
+        data = dataB
+        
+    dates = data['Date']
+    time = data['Time']
+    result = data['Result']
+    DT_column = data['Date time']
+    
     i_bn = np.where(DT_column > st)[0][0]
     i_end = np.where(DT_column > et)[0][0]
     dt_relevant = DT_column[i_bn:i_end]
     result_relevant = result[i_bn:i_end]
-    time_differences = np.asarray([dt_relevant[i+1]-dt_relevant[i] for i in (dt_relevant.index[0] + np.arange(len(dt_relevant)-1))])
-    max_rep = Counter(time_differences).most_common(4)
-    'This line finds the most common time difference which can be taken as the ideal time required to produce one set of LH and RH recliners'
-    cycle_time = (max_rep[1][0]).total_seconds()/4
-    unplanned_dt = time_differences.sum(initial = pd.to_timedelta('00:00:00'), where = (time_differences > pd.to_timedelta('00:01:00')))
-    no_ok = Counter(result_relevant)['OK']
-    no_ng = Counter(result_relevant)['NG']
-    total_possibility = no_hrs*3600/cycle_time
-    availability = 1 - unplanned_dt/pd.to_timedelta('24:00:00')
-    quality = no_ok/(no_ok + no_ng)
-    OEE = no_ok/total_possibility
-    performance = OEE/(availability*quality)
+    
+    if(len(dt_relevant)>0):
+        time_differences = np.asarray([dt_relevant[i+1]-dt_relevant[i] for i in (dt_relevant.index[0] + np.arange(len(dt_relevant)-1))])
+        unplanned_dt = time_differences.sum(initial = pd.to_timedelta('00:00:00'), where = (time_differences > pd.to_timedelta('00:01:00')))
+        no_ok = Counter(result_relevant)['OK']
+        no_ng = Counter(result_relevant)['NG']
+        
+        total_possibility = no_hrs*3600/cycle_time
+        availability = 1 - np.divide(unplanned_dt,dt.timedelta(hours = no_hrs))
+        quality = np.divide(no_ok,(no_ok + no_ng))
+        OEE = np.divide(no_ok,total_possibility)
+        performance = OEE/(availability*quality)
+    else: 
+        availability = 0
+        quality = 0
+        OEE  = 0 
+        performance = 0
     return availability, quality, OEE, performance
 
 #%%
-def htmp_calc():
+def htmp_calc(l = None):
     'This cell prepares the data for calculation of hourly quantities'
     global p_table
-    timear = pd.to_datetime(dataset['Date'] + ' ' + dataset['Time'])
-    result = dataset['Result']
+    
+    if(l == None):
+        data = dataset
+    if(l == 'A'):
+        data = dataA
+    if(l == 'B'):
+        data = dataB
+        
+    timear = data['Date time']
+    result = data['Result']
     hourly_distribution = []
     result_hrly = []
     onehr = pd.to_timedelta('1:00:00')
-    starttime = dt_relevant[i_bn]
-    rel_rge = (dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(st_time,'%Y-%m-%d %H:%M:%S')).seconds/3600
+    starttime = st_time
+    req_time = pd.to_timedelta(end_time-st_time)
+    rel_rge = int(req_time.seconds/3600)+(req_time.days)*24
     
     for i in range(int(rel_rge)):
         hourly_distribution.append(timear[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
         result_hrly.append(result[np.where(timear > starttime+i*(onehr))[0][0]:(np.where(timear > starttime+(i+1)*(onehr))[0][0])-1])
         
-
     'This part prepares the respective quantities for the generation of a heat map'
     result_minutely = []
     fivemin = pd.to_timedelta('00:05:00')
@@ -96,8 +140,8 @@ def htmp_calc():
         
     'This cell calculates the most important quantities relating to the final calculations'    
     ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
-    st2 = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') + dt.timedelta(hours = 1)
-    et2 = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') - dt.timedelta(hours = 1)
+    st2 = st_time + dt.timedelta(hours = 1)
+    et2 = end_time - dt.timedelta(hours = 1)
     h1 = np.array([[str(i)]*12 for i in pd.date_range(st_time, et2, freq = '1H')]).flatten()
     h2 = np.array([[str(i)]*12 for i in pd.date_range(st2, end_time, freq = '1H')]).flatten()
     m1 = np.arange(5,65,5)
@@ -116,12 +160,14 @@ def htmp_calc():
 def availability_plot(plflag):
     avg = availability_hrly.mean()* np.ones(no_hrs)
     std = availability_hrly.std()* np.ones(no_hrs)
+    
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
     lower_1 = avg - std*1
     lower_2 = avg - std*2
     lower_3 = avg - std*3
+    
     if(plflag == 0):
            availability_plot = tk.ThemedTk()
            availability_plot.get_themes()
@@ -168,6 +214,7 @@ def availability_plot(plflag):
 def quality_plot(plflag):
     avg = quality_hrly.mean()* np.ones(no_hrs)
     std = quality_hrly.std()* np.ones(no_hrs)
+    
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -221,6 +268,7 @@ def quality_plot(plflag):
 def OEE_plot(plflag):
     avg = OEE_hrly.mean()* np.ones(no_hrs)
     std = OEE_hrly.std()* np.ones(no_hrs)
+    
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -274,6 +322,7 @@ def OEE_plot(plflag):
 def performance_plot(plflag):
     avg = performance_hrly.mean()* np.ones(no_hrs)
     std = performance_hrly.std()* np.ones(no_hrs)
+    
     upper_1 = avg + std*1
     upper_2 = avg + std*2
     upper_3 = avg + std*3
@@ -345,7 +394,8 @@ def main():
     def clicked1():
         file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
         global dataset 
-        dataset = pd.read_csv(file)
+        dataset = pd.read_csv(file,usecols=[1,2,13,15])
+        #dataset = pd.read_csv(file)
         if {'Date','Time','Result','Line ID'}.issubset(dataset.columns):
             print('')
         elif{' Date'}.issubset(dataset.columns):
@@ -363,10 +413,17 @@ def main():
         else:
             mb.showerror("Data error", "Selected file does not contain required data set")
             window1.mainloop()
+        # pb = ttk.Progressbar(window1, orient='horizontal', mode='determinate')
+        # pb.pack(expand=True, fill=BOTH, side=TOP)
+        # pb.start(50)
+        dataset['Date time'] = pd.Series([dt.datetime.strptime((dataset['Date'][i]+' '+dataset['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset.index])
+        dataset = dataset.sort_values(by = 'Date time')
+        dataset.index = np.arange(len(dataset))
+        calc_cycle_time()
         window1.destroy()
         window2()
         
-    ch_bt1 =  ttk.Button(fr1, text = 'Choose File',style='W.TButton', command = clicked1)
+    ch_bt1 = Button(fr1, text = 'Choose File',style='W.TButton', command = clicked1)
     ch_bt1.pack(side = LEFT, padx = 10, pady = 10)
     window1.mainloop()
     
@@ -374,7 +431,7 @@ def main():
 def window2():
     global date
     date = dataset['Date']
-    #date = [dt.datetime.strptime(str(date[i]), '%d-%m-%Y') for i in range(len(date))]
+    date = [dt.datetime.strptime(str(date[i]), '%d-%m-%Y') for i in range(len(date))]
     window2 = tk.ThemedTk()
     window2.get_themes()
     window2.set_theme('clearlooks')
@@ -385,13 +442,13 @@ def window2():
     fr2 = Frame(window2)
     fr2.pack(side = TOP, fill = X)
     window2.title('Date selection')
-    sdate_lbl2 = ttk.Label(fr1, text = 'Choose starting date')
+    sdate_lbl2 = Label(fr1, text = 'Choose starting date')
     sdate_lbl2.pack(side = LEFT, pady = 5)
     strt_cmb2 = Combobox(fr1)
     strt_cmb2.pack(side = LEFT, padx = 5)
     strt_cmb2['values'] =tuple(np.unique(date))
     strt_cmb2.current(0)
-    edate_lbl2 = ttk.Label(fr1, text = 'Choose ending date').pack(side = LEFT, pady = 5, padx = 5)
+    edate_lbl2 = Label(fr1, text = 'Choose ending date').pack(side = LEFT, pady = 5, padx = 5)
     end_cmb2 = Combobox(fr1)
     end_cmb2.pack(side = LEFT, padx = 5)
     end_cmb2['values'] = tuple(np.unique(date))
@@ -400,7 +457,6 @@ def window2():
     style.configure('W.TButton', font =
        ('Times New Roman', 12, 'bold'), 
         foreground = 'red', background = '#0000FF')
- 
     
     def clicked2():
         global st_date, end_date
@@ -417,9 +473,9 @@ def window2():
         window2.destroy()
         main()        
         
-    back_bt =  ttk.Button(fr2, text = 'Back', style='W.TButton', command = bkclick) 
+    back_bt = Button(fr2, text = 'Back', style='W.TButton', command = bkclick) 
     back_bt.pack(side = LEFT, padx = 10)
-    time_bt = ttk.Button(fr2, text = 'Proceed to time range selection',style='W.TButton', command = clicked2)
+    time_bt = Button(fr2, text = 'Proceed to time range selection',style='W.TButton', command = clicked2)
     time_bt.pack(side = BOTTOM, pady = 5)
     window2.mainloop()
         
@@ -441,22 +497,24 @@ def window3():
     frame1 = Frame(window3, relief = RAISED)
     frame1.pack(fill = X)
     window3.title('Time selection') 
-    stime_lbl3 = ttk.Label(frame1, text = 'Choose starting time:', width = 20)
+    stime_lbl3 = Label(frame1, text = 'Choose starting time:', width = 20)
     stime_lbl3.pack(side = LEFT, padx = 5, pady = 5)
     stime_cmb3 = Combobox(frame1)
     stime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
     stime_cmb3['values'] =s_dti
     stime_cmb3.current(0)
-    etime_lbl3 = ttk.Label(frame1, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
+    etime_lbl3 = Label(frame1, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
     etime_cmb3 = Combobox(frame1)
     etime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
     etime_cmb3['values'] = e_dti
     etime_cmb3.current(0)
+    frb = Frame(window3, relief = FLAT)
+    frb.pack(fill = X)    
     frame2= Frame(window3, relief = RAISED, borderwidth = 2, height = 20)
     frame2.pack(fill = X)
     frame1_1= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
     frame1_1.pack(fill = X)
-    sres_lbl = ttk.Label(frame2, text = '', font = ('Arial Bold', 18), foreground ='blue')
+    sres_lbl = Label(frame2, text = '', font = ('Arial Bold', 18), foreground ='blue')
     sres_lbl.pack(side= BOTTOM,fill=X, padx = 5, pady = 5)
     frame3= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
     frame3.pack(fill = X)
@@ -492,25 +550,32 @@ def window3():
         plwindow = tk.ThemedTk()
         plwindow.get_themes()
         plwindow.set_theme('clearlooks')
+        plwindow.geometry('1000x1000')
         plwindow.configure(background= '#ffc3a0')
+        plwindow.title('Heat Map')
+        
         f = Figure(figsize = (10,10))
         f.clf()
         f.suptitle('Heatmap for 5 minutes')
         canvas = FigureCanvasTkAgg(f, master = plwindow)
-        canvas.draw()
         canvas.get_tk_widget().pack(fill = BOTH, expand = True)
-        toolbar = NavigationToolbar2Tk(canvas, plwindow)
-        toolbar.update()
+
         canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
         a = f.add_subplot(111)
-        sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+        Heatmap = sns.heatmap(p_table, cmap = 'RdYlGn', annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+        
+        # image_window = ScrollableImage(plwindow, image=img, scrollbarwidth=6, 
+        #                        width=1000, height=1000)
+        # image_window.pack()
+        
+        
+        
         plwindow.mainloop()
     
     def PieChart(win):
         for widget in frame4.winfo_children():
             widget.destroy()
 
-        res = calc_duration_parameters(st_time, end_time)
         ttk.Label(frame4, text = 'Pie Chart').pack()
      
         OEE = res[2]
@@ -539,16 +604,18 @@ def window3():
         canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
    
         
-    def RunChartParameters(win,plflag):
+    def RunChartParameters(win,plflag, l = None):
         for widget in frame3.winfo_children():
             widget.destroy()
         for widget in frame1_1.winfo_children():
             widget.destroy()
-        global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
-        st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
-        et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
+        global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, st, et, no_hrs
+        # st = dt.datetime.strptime(st_time, '%Y-%m-%d %H:%M:%S') 
+        # et = dt.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S') 
+        st = st_time
+        et = end_time
         hours = pd.date_range(start = st + dt.timedelta(hours = 1), end = et, freq = dt.timedelta(hours=1) )
-        no_hrs = int((et - st).seconds/3600)
+        no_hrs = int((et - st).seconds/3600)+24*(et-st).days
         
         availability_hrly = []
         quality_hrly = []
@@ -556,7 +623,7 @@ def window3():
         performance_hrly = []   
         
         for i in range(int(no_hrs)):
-            hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = 1))
+            hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = 1),l)
             availability_hrly.append(hr_res[0])
             quality_hrly.append(hr_res[1])
             OEE_hrly.append(hr_res[2])
@@ -579,62 +646,69 @@ def window3():
         perf = ttk.Button(frame3, text="Performance",style = 'W.TButton', command = lambda : performance_plot(plflag))
         perf.pack(side = LEFT, padx = 5, pady = 5) 
         
-    def printout():
-        res = calc_duration_parameters(st_time, end_time)
+    def printout(l):
+        res = calc_duration_parameters(st_time, end_time,l)
         txt = 'The production parameters are given by :' +'\n' + 'Availability : ' + str(res[0]) + '\n' + 'Quality : ' + str(res[1]) + '\n' + 'Performance : ' + str(res[3]) + '\n' + 'OEE : '  + str(res[2]) #AQOP
         sres_lbl.configure(text = txt)
         
-    def begin():
-        global flag, res
-        res = calc_duration_parameters(st_time, end_time)
+    def begin(l = None):
+        global flag, res, p_table
+        res = calc_duration_parameters(st_time, end_time,l)
         sres_lbl.configure(text = '')
+        
         for widget in frame1_1.winfo_children():
             widget.destroy()
         for widget in frame3.winfo_children():
             widget.destroy()
         for widget in frame4.winfo_children():
             widget.destroy()
-        txt = calc_duration_parameters(st_time, end_time)
-        p_table = htmp_calc()
-        params = ttk.Button(frame2, text = 'Production Quantities',style = 'W.TButton', command = lambda: printout())
+
+        PieChart(window3)
+        p_table = htmp_calc(l)
+        params = ttk.Button(frame2, text = 'Production Quantities',style = 'W.TButton', command = lambda: printout(l))
         hm = ttk.Button(frame2, text = 'Heatmap',style = 'W.TButton', command = lambda : plotmap(p_table))
-        RC = ttk.Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3,0))
-        Piechart = ttk.Button(frame2, text = 'Pie Chart', style = 'W.TButton',command = lambda: PieChart(window3))
+        RC = ttk.Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3,0,l))
         ip = ttk.Button(frame2, text = 'View Interactive Plot in browser',style = 'W.TButton', command = inplot)
+        
         if(flag == 0):
             params.pack(side = LEFT, padx = 10)
             hm.pack(side = LEFT, padx = 10)
             RC.pack(side = LEFT, padx = 10)
-            Piechart.pack(side = LEFT, padx = 10)
             ip.pack(side = LEFT, padx = 10)
-            flag = 1
+            flag = l
         
-    def clicked3():
+    def clicked3(l = None):
         global st_time ,end_time
-        timear = pd.to_datetime(dataset['Date'] + ' ' + dataset['Time'])
-        #stime_lbl4.configure(text = type(stime_cmb4.get))
         st_time = stime_cmb3.get()
+        st_time = dt.datetime.strptime(st_time,'%Y-%m-%d %H:%M:%S')
         end_time = etime_cmb3.get()
+        end_time = dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S')
+        timear = dataset['Date time']
         if st_time>end_time:
             mb.showerror("Date Error", "End time must be greater than start time")
-        elif pd.to_datetime(st_time) < timear[0] - pd.to_timedelta('01:00:00'):
+        elif st_time < timear[0] - pd.to_timedelta('01:00:00'):
             mb.showerror("Date Error", "Start time is out of range")
             window3.mainloop()
-        elif pd.to_datetime(end_time)> timear.iloc[-1]:
+        elif end_time> timear.iloc[-1]:
             mb.showerror("Date Error", "End time is out of range")
             window3.mainloop()
-        begin()
+        begin(l)
         
     def bkclick():
         window3.destroy()
         window2()
         
-    back_bt = Button(frame1, text = 'Back',style = 'W.TButton', command = bkclick)
+    back_bt = Button(frb, text = 'Back',style = 'W.TButton', command = bkclick)
     back_bt.pack(side = LEFT, padx = 10)
-    begin_bt = Button(frame1, text = 'Begin Calculation',style = 'W.TButton', command = clicked3)
-    begin_bt.pack(side = LEFT, padx = 10)
+    begin_A = Button(frb, text = 'Line A',style = 'W.TButton', command = lambda: clicked3('A'))
+    begin_A.pack(side = RIGHT, padx = 10)
+    begin_B = Button(frb, text = 'Line B',style = 'W.TButton', command = lambda: clicked3('B'))
+    begin_B.pack(side = RIGHT, padx = 10)    
+    begin_O = Button(frb, text = 'Go',style = 'W.TButton', command = clicked3)
+    begin_O.pack(side = RIGHT, padx = 10)    
     window3.mainloop()
         
 #%%
 if __name__ =='__main__':
     main()
+
