@@ -186,7 +186,7 @@ def availability_plot(plflag):
     if(plflag == 0):
            availability_plot = tk.ThemedTk()
            availability_plot.get_themes()
-           availability_plot.set_theme('breezeks')
+           availability_plot.set_theme('breeze')
            availability_plot.geometry('1200x1200')
            availability_plot.title('Availability Run Chart')
            f = Figure(figsize=(10,10))
