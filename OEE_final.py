@@ -12,6 +12,7 @@ from tkinter import ttk
 from ttkthemes import themed_tk as tk
 from tkinter import filedialog
 from collections import Counter
+import tkinter as tkt
 import time
 import re
 import pandas as pd
@@ -46,9 +47,23 @@ end_time = dt.datetime.now()
 p_table = []  
 flag = 0
 res = []
+#Get Images
+# Performance_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Performance.png')
+# OEE_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\OEE.png')
+# Quality_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Quality.png')
+# Availability_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Availability.png')
+# Back_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Back.png')
+# Go_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Go.png')
+# LineA_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Line A.png')
+# LineB_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Line B.png')
+# HeatMap_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Heat Map.png')
+# RunCharts_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Run Charts.png')
+# ViewInteractive_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\View Interactive Plot in Browser.png')
+# ProdQuan_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Production Quantities.png')
+# ProceedtoTime_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Proceed to Time Range Selection.png')
+
 
 #%%
-
 def calc_cycle_time():
     global dataA, dataB, cycle_time
     line = dataset['Line ID']
@@ -171,7 +186,7 @@ def availability_plot(plflag):
     if(plflag == 0):
            availability_plot = tk.ThemedTk()
            availability_plot.get_themes()
-           availability_plot.set_theme('clearlooks')
+           availability_plot.set_theme('breezeks')
            availability_plot.geometry('1200x1200')
            availability_plot.title('Availability Run Chart')
            f = Figure(figsize=(10,10))
@@ -225,7 +240,7 @@ def quality_plot(plflag):
     if(plflag == 0):
      quality_plot = tk.ThemedTk()
      quality_plot.get_themes()
-     quality_plot.set_theme('clearlooks')
+     quality_plot.set_theme('breeze')
      quality_plot.geometry('1200x1200')
      quality_plot.title('Quality Run Chart')
      f = Figure(figsize=(10,10))
@@ -279,7 +294,7 @@ def OEE_plot(plflag):
     if(plflag == 0):
         OEE_plot = tk.ThemedTk()
         OEE_plot.get_themes()
-        OEE_plot.set_theme('clearlooks')
+        OEE_plot.set_theme('breeze')
         OEE_plot.geometry('1200x1200')
         OEE_plot.title('OEE Run Chart')    
         f = Figure(figsize=(10,10))
@@ -333,7 +348,7 @@ def performance_plot(plflag):
     if(plflag == 0):
         performance_plot = tk.ThemedTk()
         performance_plot.get_themes()
-        performance_plot.set_theme('clearlooks')
+        performance_plot.set_theme('breeze')
         performance_plot.geometry('1200x1200')
         performance_plot.title('OEE Run Chart')
         f = Figure(figsize=(10,10))
@@ -374,9 +389,11 @@ def performance_plot(plflag):
 #%%
 'Defining the GUI'
 def main():
+    
+   
     window1 = tk.ThemedTk()
     window1.get_themes()
-    window1.set_theme('clearlooks')
+    window1.set_theme('breeze')
     window1.configure(background= '#ffc3a0')
     window1.title('Lear Remote Internship')
     window1.geometry('500x300')
@@ -386,11 +403,6 @@ def main():
     wel_lb1.pack(side = TOP, pady = 20)
     ch_lbl1 = ttk.Label(fr1, text = 'Choose the input data file', font = ('latin modern roman',15))
     ch_lbl1.pack(side = LEFT, padx = 20, pady = 10)
-    style = Style() 
-    style.configure('W.TButton', font =
-       ('Times New Roman', 12, 'bold'), 
-        foreground = 'red', background = '#0000FF')
-    
     def clicked1():
         file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
         global dataset 
@@ -422,8 +434,8 @@ def main():
         calc_cycle_time()
         window1.destroy()
         window2()
-        
-    ch_bt1 = Button(fr1, text = 'Choose File',style='W.TButton', command = clicked1)
+    ChooseFile_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Choose File.png')    
+    ch_bt1 = tkt.Button(fr1, image = ChooseFile_img ,borderwidth=0, command = clicked1)
     ch_bt1.pack(side = LEFT, padx = 10, pady = 10)
     window1.mainloop()
     
@@ -431,10 +443,10 @@ def main():
 def window2():
     global date
     date = dataset['Date']
-    date = [dt.datetime.strptime(str(date[i]), '%d-%m-%Y') for i in range(len(date))]
+    date = [dt.datetime.strptime(str(date[i]), '%d-%m-%Y').date() for i in range(len(date))]
     window2 = tk.ThemedTk()
     window2.get_themes()
-    window2.set_theme('clearlooks')
+    window2.set_theme('breeze')
     window2.configure(background= '#ffc3a0')
     window2.geometry('850x300')
     fr1 = Frame(window2, relief = RAISED,borderwidth = 1)
@@ -472,10 +484,11 @@ def window2():
     def bkclick():
         window2.destroy()
         main()        
-        
-    back_bt = Button(fr2, text = 'Back', style='W.TButton', command = bkclick) 
+    Back_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Back.png')
+    ProceedtoTime_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Proceed to Time Range Selection.png')    
+    back_bt = tkt.Button(fr2, image = Back_img,borderwidth=0, command = bkclick) 
     back_bt.pack(side = LEFT, padx = 10)
-    time_bt = Button(fr2, text = 'Proceed to time range selection',style='W.TButton', command = clicked2)
+    time_bt = tkt.Button(fr2, image = ProceedtoTime_img,borderwidth=0, command = clicked2)
     time_bt.pack(side = BOTTOM, pady = 5)
     window2.mainloop()
         
@@ -487,12 +500,12 @@ def window3():
     s_et = (st_date + dt.timedelta(hours=23))
     e_st = (end_date + dt.timedelta(0))
     e_et = (end_date + dt.timedelta(hours =23))
-    s_dti = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))
+    s_dti = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))  
     e_dti = tuple(pd.date_range(start = e_st, end = e_et, freq = '1H'))
     window3 = tk.ThemedTk()
     window3.get_themes()
-    window3.set_theme('clearlooks')
-    window3.geometry('1000x1000')
+    window3.set_theme('breeze')
+    window3.geometry('1000x1200')
     window3.configure(background= '#ffc3a0')
     frame1 = Frame(window3, relief = RAISED)
     frame1.pack(fill = X)
@@ -527,13 +540,20 @@ def window3():
  
 
     def plotinmap():
-        fig= go.Figure()
-        fc = ['black','white']
-        annot_text = np.array([str(p_table.values[i][j]) for i in range(np.shape(p_table.values)[0]) for j in range(np.shape(p_table.values)[1])]).reshape(np.shape(p_table.values))
-        fig = ff.create_annotated_heatmap(z = p_table.values, x = list(p_table.columns), y = list(p_table.index.values), annotation_text = annot_text, colorscale= 'rdylgn', font_colors = fc)
-        fig.update_layout(title = dict(text = 'Heat Map depicting produced quantites every 5 minutes', x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
-        fig = fig.to_plotly_json()
-        plotly.offline.plot(fig)
+        no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
+        if(no_hrs>48):
+            Msg = mb.askyesno(title='Warning', message= 'The selected time range is very large \nHeatmap would not be clear \nWould you still want to continue?') 
+        elif(no_hrs<=48):
+            Msg = True
+        
+        if Msg==True: 
+            fig= go.Figure()
+            fc = ['black','white']
+            annot_text = np.array([str(p_table.values[i][j]) for i in range(np.shape(p_table.values)[0]) for j in range(np.shape(p_table.values)[1])]).reshape(np.shape(p_table.values))
+            fig = ff.create_annotated_heatmap(z = p_table.values, x = list(p_table.columns), y = list(p_table.index.values), annotation_text = annot_text, colorscale= 'rdylgn', font_colors = fc)
+            fig.update_layout(title = dict(text = 'Heat Map depicting produced quantites every 5 minutes', x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
+            fig = fig.to_plotly_json()
+            plotly.offline.plot(fig)
     
         
     def inplot():
@@ -541,8 +561,14 @@ def window3():
             widget.destroy()
         for widget in frame1_1.winfo_children():
             widget.destroy()
-        hm = ttk.Button(frame1_1, text = 'Heatmap',style = 'W.TButton', command = plotinmap)
-        RC = ttk.Button(frame1_1, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3, 1))    
+        
+        HeatMap_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Heat Map.png')
+        RunCharts_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Run Charts.png')
+        
+        hm = tkt.Button(frame1_1, image= HeatMap_img ,borderwidth=0, command = plotinmap)
+        RC = tkt.Button(frame1_1, image= RunCharts_img ,borderwidth=0, command = lambda : RunChartParameters(window3, 1))    
+        hm.photo = HeatMap_img
+        RC.photo = RunCharts_img
         hm.pack(side = LEFT,padx = 5, pady = 5)
         RC.pack(side = LEFT,padx = 5, pady = 5)
         
@@ -551,17 +577,14 @@ def window3():
         no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
         if(no_hrs>48):
             Msg = mb.askyesno(title='Warning', message= 'The selected time range is very large \nHeatmap would not be clear \nWould you still want to continue?') 
-            print(Msg)
         elif(no_hrs<=48):
             Msg = True
-        
-        print(Msg)
         
         if(Msg == True): 
             print('Hare Krishna')
             plwindow = tk.ThemedTk()
             plwindow.get_themes()
-            plwindow.set_theme('clearlooks')
+            plwindow.set_theme('breeze')
             plwindow.geometry('1000x1000') 
             plwindow.configure(background= '#ffc3a0')
             plwindow.title('Heat Map')
@@ -635,7 +658,12 @@ def window3():
             OEE_hrly.append(hr_res[2])
             performance_hrly.append(hr_res[3])
             st = st+dt.timedelta(hours = 1)
-            
+         
+        Performance_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Performance.png')
+        OEE_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\OEE.png')
+        Quality_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Quality.png')
+        Availability_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Availability.png')
+        
         availability_hrly = np.array(availability_hrly)
         quality_hrly = np.array(quality_hrly)
         OEE_hrly = np.array(OEE_hrly)
@@ -643,13 +671,17 @@ def window3():
         sres_lbl = ttk.Label(frame3, text = 'Please select required parameter:', font = ('Arial Bold', 18))
         sres_lbl.pack(fill = BOTH, padx = 5, pady = 5)
 
-        av = ttk.Button(frame3, text="Availability",style = 'W.TButton',command = lambda : availability_plot(plflag))
+        av = tkt.Button(frame3, image = Availability_img ,borderwidth=0,command = lambda : availability_plot(plflag))
+        av.photo = Availability_img
         av.pack(side = LEFT, padx = 5, pady = 5)
-        ql = ttk.Button(frame3, text="Quality",style = 'W.TButton', command = lambda : quality_plot(plflag))
+        ql = tkt.Button(frame3, image = Quality_img ,borderwidth=0, command = lambda : quality_plot(plflag))
+        ql.photo = Quality_img
         ql.pack(side = LEFT, padx = 5, pady = 5)
-        oee =  ttk.Button(frame3, text="OEE",style = 'W.TButton', command = lambda : OEE_plot(plflag))
+        oee =  tkt.Button(frame3, image = OEE_img,borderwidth=0, command = lambda : OEE_plot(plflag))
+        oee.photo = OEE_img
         oee.pack(side = LEFT, padx = 5, pady = 5)
-        perf = ttk.Button(frame3, text="Performance",style = 'W.TButton', command = lambda : performance_plot(plflag))
+        perf = tkt.Button(frame3, image = Performance_img ,borderwidth=0, command = lambda : performance_plot(plflag))
+        perf.photo = Performance_img
         perf.pack(side = LEFT, padx = 5, pady = 5) 
         
     def printout(l):
@@ -668,13 +700,23 @@ def window3():
             widget.destroy()
         for widget in frame4.winfo_children():
             widget.destroy()
-
+            
         PieChart(window3)
         p_table = htmp_calc(l)
-        params = ttk.Button(frame2, text = 'Production Quantities',style = 'W.TButton', command = lambda: printout(l))
-        hm = ttk.Button(frame2, text = 'Heatmap',style = 'W.TButton', command = lambda : plotmap(p_table))
-        RC = ttk.Button(frame2, text = 'Runcharts',style = 'W.TButton', command = lambda : RunChartParameters(window3,0,l))
-        ip = ttk.Button(frame2, text = 'View Interactive Plot in browser',style = 'W.TButton', command = inplot)
+        
+        HeatMap_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Heat Map.png')
+        RunCharts_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Run Charts.png')
+        ViewInteractive_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\View Interactive Plot in Browser.png')
+        ProdQuan_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Production Quantities.png')
+
+        params = tkt.Button(frame2, image = ProdQuan_img ,borderwidth=0, command = lambda: printout(l))
+        params.photo = ProdQuan_img
+        hm = tkt.Button(frame2, image = HeatMap_img ,borderwidth=0, command = lambda : plotmap(p_table))
+        hm.photo = HeatMap_img
+        RC = tkt.Button(frame2, image = RunCharts_img,borderwidth=0, command = lambda : RunChartParameters(window3,0,l))
+        RC.photo = RunCharts_img
+        ip = tkt.Button(frame2, image = ViewInteractive_img,borderwidth=0, command = inplot)
+        ip.photo = ViewInteractive_img
         
         if(flag == 0):
             params.pack(side = LEFT, padx = 10)
@@ -703,14 +745,17 @@ def window3():
     def bkclick():
         window3.destroy()
         window2()
-        
-    back_bt = Button(frb, text = 'Back',style = 'W.TButton', command = bkclick)
+    Go_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Go.png')
+    LineA_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Line A.png')
+    LineB_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Line B.png')
+    Back_img = PhotoImage(file = r'C:\Users\KAUSHIK S CHETTIAR\Pictures\Internship buttons\Back.png')
+    back_bt = tkt.Button(frb, image = Back_img ,borderwidth=0, command = bkclick)
     back_bt.pack(side = LEFT, padx = 10)
-    begin_A = Button(frb, text = 'Line A',style = 'W.TButton', command = lambda: clicked3('A'))
+    begin_A = tkt.Button(frb, image = LineA_img ,borderwidth=0,command = lambda: clicked3('A'))
     begin_A.pack(side = RIGHT, padx = 10)
-    begin_B = Button(frb, text = 'Line B',style = 'W.TButton', command = lambda: clicked3('B'))
+    begin_B = tkt.Button(frb, image = LineB_img ,borderwidth=0,command = lambda: clicked3('B'))
     begin_B.pack(side = RIGHT, padx = 10)    
-    begin_O = Button(frb, text = 'Go',style = 'W.TButton', command = clicked3)
+    begin_O = tkt.Button(frb, image = Go_img, borderwidth=0,command = clicked3)
     begin_O.pack(side = RIGHT, padx = 10)    
     window3.mainloop()
         
