@@ -465,10 +465,7 @@ def window2():
     end_cmb2.pack(side = LEFT, padx = 5)
     end_cmb2['values'] = tuple(np.unique(date))
     end_cmb2.current(0)
-    style = Style() 
-    style.configure('W.TButton', font =
-       ('Times New Roman', 12, 'bold'), 
-        foreground = 'red', background = '#0000FF')
+
     
     def clicked2():
         global st_date, end_date
@@ -533,11 +530,7 @@ def window3():
     frame3.pack(fill = X)
     frame4= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
     frame4.pack(fill = X)
-    style = Style() 
-    style.configure('W.TButton', font =
-       ('Times New Roman', 12,'bold'), 
-        foreground = 'red', background = '#0000FF') 
- 
+    
 
     def plotinmap():
         no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
