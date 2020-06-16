@@ -581,7 +581,6 @@ def window3():
             Msg = True
         
         if(Msg == True): 
-            print('Hare Krishna')
             plwindow = tk.ThemedTk()
             plwindow.get_themes()
             plwindow.set_theme('breeze')
