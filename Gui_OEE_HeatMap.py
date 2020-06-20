@@ -98,20 +98,16 @@ def calc_cycle_time():
 def calc_duration_parameters(st, et, l = None, wf = 1):
     no_hrs = int((pd.to_datetime(et) - pd.to_datetime(st)).seconds/3600)+ 24*(et-st).days
     global dt_relevant, i_bn    
-    '''
-    if(l == None):
-        data = dataset
-         
-    if(l == 'A'):
-        data = dataA
-        
-    if(l=='B'):
-        data = dataB
-    '''   
     
     if(wf == 1):
         data = dataset
-         
+        
+        if(l == 'A'):
+            data = dataA
+            
+        if(l=='B'):
+            data = dataB
+               
     if(wf == 2):
         data = dataset2
     
@@ -635,12 +631,12 @@ def window2(wf = 1):
     if wf == 2:
         #bim_1 = Image.open(dir_path+'/Internship buttons/Back2.png')
         #bim1 = ImageTk.PhotoImage(bim_1)
-        back_bt = tkt.Button(fr2, text = 'Back', style = 'W.TButton', borderwidth = 0, command = bkclick) 
+        back_bt = Button(fr2, text = 'Back', style = 'W.TButton', command = bkclick) 
         #back_bt.photo = bim1
         back_bt.pack(side = LEFT, padx = 10)
         #ptim_1 = Image.open(dir_path+'/Internship buttons/Proceed to Time Range Selection2.png')
         #ptim1 = ImageTk.PhotoImage(ptim_1)
-        time_bt = tkt.Button(fr2, text = 'Proceed to Time Range Selection', borderwidth = 0, command = clicked2)
+        time_bt = Button(fr2, text = 'Proceed to Time Range Selection', command = clicked2)
         #time_bt.photo = ptim
         time_bt.pack(side = BOTTOM, pady = 5)  
         
@@ -702,7 +698,7 @@ def window3():
     window3 = tk.ThemedTk()
     window3.get_themes()
     window3.set_theme('breeze')
-    window3.geometry('1500x1200')
+    window3.geometry('1650x1200')
     window3.configure(background= '#ffc3a0')
     frame1 = Frame(window3, relief = RAISED)
     frame1.pack(fill = X)
@@ -793,7 +789,9 @@ def window3():
             f.clf()
             f.suptitle('Heatmap for 5 minutes')
             a = f.add_subplot(111)
-            sns.heatmap(p_table, cmap = 'RdYlGn', annot_kws = {'size':15},annot = p_table.values, ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+            #val = np.array([str(p_table.values[i][j]) for i in range(len(p_table.values)) for j in range(len(p_table.values[0]))])
+            #val = val.reshape(np.shape(p_table.values))
+            sns.heatmap(p_table, cmap = 'RdYlGn', annot_kws = {'size':15},annot = p_table.values, fmt = 'd', ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
             
             if l == 'P':
                 f.savefig(dir_path + '/temp/heatmap.png')
@@ -1033,9 +1031,9 @@ def window3():
         Set_image=ImageTk.PhotoImage(image3)
         Set_bt = tkt.Button(frame2, image = Set_image,borderwidth=0,command = Settings)
         Set_bt.photo = Set_image
-        com_lin = tkt.Button(frame2, text = 'Compare high speed lines', command = lambda : comp_lin('C'))
+        com_lin = Button(frame2, text = 'Compare high speed lines', style = 'W.TButton', command = lambda : comp_lin('C'))
         #begin_A.photo = lA
-        #com_test = Button(frame2, text = 'Compare test lines', command = lambda: comp_lin('T'))
+        com_test = Button(frame2, text = 'Compare test lines', style = 'W.TButton', command = lambda: comp_lin('T'))
         #begin_B.photo = lB
         Gpdf = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Generate PDF Report.png'))
         begin_rep= tkt.Button(frame2, image = Gpdf, borderwidth = 0, command = lambda: gen_pdf(res_rd))
@@ -1055,7 +1053,7 @@ def window3():
             RC.pack(side = LEFT, padx = 10)
             ip.pack(side = LEFT, padx = 10)
             com_lin.pack(side = RIGHT, padx = 10)
-            #com_test.pack(side = RIGHT, padx = 10)
+            com_test.pack(side = RIGHT, padx = 10)
             begin_rep.pack(side = RIGHT, padx = 10)
             Set_bt.pack(side = RIGHT, padx=(10,20))
             flag = 1
@@ -1180,11 +1178,11 @@ def comp_lin(l):
         dataset2.index = np.arange(len(dataset2))
         window2(wf = 2)
 
-    if l =='R':
+    if l =='R' or l == 'T':
         comp = tk.ThemedTk()
         comp.get_themes()
         comp.set_theme('breeze')
-        comp.geometry('800x600')
+        comp.geometry('1000x600')
         comp.title('Comparison window')
         
         fr1 = Frame(comp, relief = FLAT, height = 100)
@@ -1206,67 +1204,81 @@ def comp_lin(l):
            ('Times New Roman', 12,'bold'), 
             foreground = 'red', background = '#0000FF') 
     
-        s_st = (sd2 + dt.timedelta(0))
-        s_et = (sd2 + dt.timedelta(hours=23))
-        e_st = (ed2 + dt.timedelta(0))
-        e_et = (ed2 + dt.timedelta(hours =23))
-        s_dtip = pd.date_range(start = s_st, end = s_et, freq = '1H')
-        s_dti = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(s_dtip[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(s_dtip))]))    
-        
-        stime_lblc = Label(fr1, text = 'Choose starting time:', width = 20)
-        stime_lblc.pack(side = LEFT, padx = 5, pady = 5)
-        stime_cmbc = Combobox(fr1)
-        etime_cmbc = Combobox(fr1, state = 'disabled')
-        st2 = dt.datetime.now()
-        et2 = dt.datetime.now()
-        
-        def chosen(a):
-            #global st_time
-            nonlocal st2
-            st2 = dt.datetime.strptime(a,'%d-%m-%Y %H:%M:%S')
-            etime_cmbc.configure(state = 'normal')
-            pdi = pd.date_range(start = st2, end = e_et, freq = '1H')
-            pdi = tuple(pdi[np.where(pdi >= pd.to_datetime(ed2))])
-            edi = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(pdi[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(pdi))]))
-            etime_cmbc['values'] = edi
-            etime_cmbc.current(0)       
+        if l == 'R':
+            s_st = (sd2 + dt.timedelta(0))
+            s_et = (sd2 + dt.timedelta(hours=23))
+            e_st = (ed2 + dt.timedelta(0))
+            e_et = (ed2 + dt.timedelta(hours =23))
+            s_dtip = pd.date_range(start = s_st, end = s_et, freq = '1H')
+            s_dti = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(s_dtip[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(s_dtip))]))    
             
-        stime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
-        stime_cmbc['values'] =s_dti
-        stime_cmbc.current(0)
-        stime_cmbc.bind("<<ComboboxSelected>>", lambda x: chosen(stime_cmbc.get()))
-        etime_lblc = Label(fr1, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
-        etime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
-        
-        def clickc():
+            stime_lblc = Label(fr1, text = 'Choose starting time:', width = 20)
+            stime_lblc.pack(side = LEFT, padx = 5, pady = 5)
+            stime_cmbc = Combobox(fr1)
+            etime_cmbc = Combobox(fr1, state = 'disabled')
+            st2 = dt.datetime.now()
+            et2 = dt.datetime.now()
             
-            for widget in fr2_1.winfo_children():
-                widget.destroy()
-            for widget in fr2_2.winfo_children():
-                widget.destroy()
-            for widget in fr3_1.winfo_children():
-                widget.destroy()
-            for widget in fr3_2.winfo_children():
-                widget.destroy()
+            def chosen(a):
+                #global st_time
+                nonlocal st2
+                st2 = dt.datetime.strptime(a,'%d-%m-%Y %H:%M:%S')
+                etime_cmbc.configure(state = 'normal')
+                pdi = pd.date_range(start = st2, end = e_et, freq = '1H')
+                pdi = tuple(pdi[np.where(pdi >= pd.to_datetime(ed2))])
+                edi = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(pdi[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(pdi))]))
+                etime_cmbc['values'] = edi
+                etime_cmbc.current(0)       
                 
-            nonlocal et2
-            et2 = etime_cmbc.get()
-            et2 = dt.datetime.strptime(str(end_time),'%Y-%m-%d %H:%M:%S')
-            res2 = calc_duration_parameters(st2, et2, wf = 2)
-            res_rd = np.asarray([str(round(100*res[i],2))+'%' for i in range(len(res))])
-            res2_rd = np.asarray([str(round(100*res2[i],2))+'%' for i in range(len(res2))])
-            printout(fr2_1, res_rd)
-            printout(fr2_2, res2_rd)
-            PieChartDraw(res, fr3_1)
-            PieChartDraw(res2, fr3_2)
-            lb1 = Label(fr2_1, text = 'Dataset 1', font = ('Arial Bold', 16)).pack()
-            lb2 = Label(fr2_2, text = 'Dataset 2', font = ('Arial Bold', 16)).pack()
+            stime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
+            stime_cmbc['values'] =s_dti
+            stime_cmbc.current(0)
+            stime_cmbc.bind("<<ComboboxSelected>>", lambda x: chosen(stime_cmbc.get()))
+            etime_lblc = Label(fr1, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
+            etime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
             
+            def clickc():
+                
+                for widget in fr2_1.winfo_children():
+                    widget.destroy()
+                for widget in fr2_2.winfo_children():
+                    widget.destroy()
+                for widget in fr3_1.winfo_children():
+                    widget.destroy()
+                for widget in fr3_2.winfo_children():
+                    widget.destroy()
+                    
+                nonlocal et2
+                et2 = etime_cmbc.get()
+                et2 = dt.datetime.strptime(str(end_time),'%Y-%m-%d %H:%M:%S')
+                res2 = calc_duration_parameters(st2, et2, wf = 2)
+                res_rd = np.asarray([str(round(100*res[i],2))+'%' for i in range(len(res))])
+                res2_rd = np.asarray([str(round(100*res2[i],2))+'%' for i in range(len(res2))])
+                printout(fr2_1, res_rd)
+                printout(fr2_2, res2_rd)
+                PieChartDraw(res, fr3_1)
+                PieChartDraw(res2, fr3_2)
+                lb1 = Label(fr2_1, text = 'Dataset 1', font = ('Arial Bold', 16)).pack()
+                lb2 = Label(fr2_2, text = 'Dataset 2', font = ('Arial Bold', 16)).pack()
+                
+                ac_bt = Button(fr1, text = 'Accept', style = 'W.TButton', command = clickc)
+                ac_bt.pack(side = LEFT)
+                
+        if l == 'T':
+            resA = calc_duration_parameters(st_time, end_time, l ='A', wf = 1)
+            resB = calc_duration_parameters(st_time, end_time, l ='B', wf = 1)
+            resA_rd = np.asarray([str(round(100*resA[i],2))+'%' for i in range(len(resA))])
+            resB_rd = np.asarray([str(round(100*resB[i],2))+'%' for i in range(len(resB))])
+            printout(fr2_1, resA_rd)
+            printout(fr2_2, resB_rd)
+            PieChartDraw(resA, fr3_1)
+            PieChartDraw(resB, fr3_2)            
+            lb1 = Label(fr2_1, text = 'Line A', font = ('Arial Bold', 16)).pack()
+            lb2 = Label(fr2_2, text = 'Line B', font = ('Arial Bold', 16)).pack()
+                
         if l == 'X':
             comp.destroy()
         
-        ac_bt = Button(fr1, text = 'Accept', style = 'W.TButton', command = clickc)
-        ac_bt.pack(side = LEFT)
         comp.mainloop()
         
 #%%
