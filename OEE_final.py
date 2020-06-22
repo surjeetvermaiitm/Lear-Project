@@ -717,6 +717,7 @@ def PieChartDraw(results, fr):
     if PD_hrs<UPD_hrs:
         UPD_hrs = UPD_hrs-PD_hrs
     elif PD_hrs>= UPD_hrs:
+        PD_hrs = UPD_hrs
         UPD_hrs = 0
     # Availability removing Planned Downtime
     Avail_PD = 1 - (PD_hrs/((end_time-st_time).seconds/3600))
