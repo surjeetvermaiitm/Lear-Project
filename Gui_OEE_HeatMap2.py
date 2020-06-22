@@ -7,6 +7,18 @@ Created on Sat Jun 20 15:31:59 2020
 @author: syshain
 """
 
+
+#%%
+
+'''
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WHERE THE CODE CONTAINS SUCH MULTILINE COMMENTS, NOTE THAT THERE REPRESENT NEW CHANGES TO THE CODE
+NOTE THAT CHANGES IN THE CODE ARE SURROUNDED BY SUCH COMMENTS EXPLAINING THE PURPOSE OF THOSE CHANGES
+'' surrounds the part of the code that actually contains changes
+Look for a \'' following a \'\'' (without the escape sequences ofc)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+'''
+
 #%%
 from tkinter import *
 from tkinter.ttk import *
@@ -385,9 +397,10 @@ def PieChartDraw(results, fr):
     elif PD_hrs>= UPD_hrs:
         PD_hrs = UPD_hrs
         UPD_hrs = 0
+
     # Availability removing Planned Downtime
-    Avail_PD = 1 - np.divide(PD_hrs,(end_time-st_time).seconds/3600)
-    Avail_UPD = 1 - np.divide(UPD_hrs,(end_time-st_time).seconds/3600)
+    Avail_PD = 1 - np.divide(PD_hrs,((end_time-st_time).seconds/3600) + (end_time-st_time).days*24)
+    Avail_UPD = 1 - np.divide(UPD_hrs,((end_time-st_time).seconds/3600) + (end_time-st_time).days*24)
     # Planned Downtime: All shifts have different planned downtime hours. 
     Quality = results[1]
     OEE= results[2]
@@ -406,6 +419,8 @@ def PieChartDraw(results, fr):
 
     colors = ['Green','#33F3FF','Yellow', 'Red', 'DarkRed'] 
     explode =(0,0,0.1,0,0.1)
+    
+    print(values)
     
     f = plt.figure(figsize=(10,10))
     a = f.add_subplot(111)
@@ -440,7 +455,22 @@ def RunCharts(plotflag, interactive = 0, l = None):
     global calcflag
     
     if calcflag == 0:
+        
         global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, ok_hrly, ng_hrly, hours, no_hrs
+        '''
+        The following lines of code are added to ensure that the hourly 
+        quantities are initialized as lists everytime a new calculation 
+        is started
+        '''
+        ''
+        availability_hrly = []
+        quality_hrly = []
+        OEE_hrly = []
+        performance_hrly = []
+        ok_hrly = []
+        ng_hrly = []
+        ''
+        
         st = st_time
         et = end_time
         hours = pd.date_range(start = st + dt.timedelta(hours = runhrs), end = et, freq = dt.timedelta(hours=runhrs))
@@ -491,44 +521,80 @@ def main():
         global line1, dataset
         
         file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
+        
         if re.search(r"HSL1.csv",file):
             line1 = 1
         if re.search(r"HSL2.csv",file):
             line1 = 2       
 
-        dataset = pd.read_csv(file, encoding = 'latin1')
+        '''
+        Changes are being made to try and include a window that will load once preprocessing of the dataset starts
+        '''
+        ''
+        mbx = Tk()
+        mbx.geometry('300x100')
+        mbx.title('Please Wait')
+        lbx = Label(mbx, text = 'Kindly Wait. Loading', font = ('Arial Bold', 10)).pack()
         
-        if {'Date','Time','Result','Line ID'}.issubset(dataset.columns):
-            print('')
-        elif{' Date'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
-            window1.mainloop()
-        elif{' Time'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
-            window1.mainloop()
-        elif{' Result'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
-            window1.mainloop()
-        elif{' Date'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
-            window1.mainloop()
-        else:
-            mb.showerror("Data error", "Selected file does not contain required data set")
-            window1.mainloop()
+        frflag = 0
+        ''
+        def preproc():
+            global dataset
+            dataset = pd.read_csv(file, encoding = 'latin1')
             
-        dataset['Date time'] = pd.Series([dt.datetime.strptime((dataset['Date'][i]+' '+dataset['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset.index])
-        dataset = dataset.sort_values(by = 'Date time')
-        dataset.index = np.arange(len(dataset))
-        calc_cycle_time()
-        window1.destroy()
-        window2(wf = 1)
+            if {'Date','Time','Result','Line ID'}.issubset(dataset.columns):
+                print('')
+            elif{' Date'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
+                window1.mainloop()
+            elif{' Time'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
+                window1.mainloop()
+            elif{' Result'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
+                window1.mainloop()
+            elif{' Date'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
+                window1.mainloop()
+            else:
+                mb.showerror("Data error", "Selected file does not contain required data set")
+                window1.mainloop()
+            
+            dataset['Date time'] = pd.Series([dt.datetime.strptime((dataset['Date'][i]+' '+dataset['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset.index])
+            dataset = dataset.sort_values(by = 'Date time')
+            dataset.index = np.arange(len(dataset))
+            
+            ''
+            nonlocal frflag
+            frflag = 1
+            
+        def filecheck():
+            if frflag == 1:
+                mbx.destroy()
+                calc_cycle_time()
+                window1.destroy()
+                window2(wf = 1)
+            if frflag == 0:
+                mbx.after(500, filecheck)
+                
+        mbx.after(1000, preproc)
+        mbx.after(2000, filecheck)
+        mbx.mainloop()
+        ''
+        '''
+        This is equivalent to the progressbar except it is simply a window
+        '''
+
+        
         
     cfim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Choose File.png'))
     ch_bt1 = tkt.Button(fr1, image = cfim, borderwidth = 0,command = clicked1)
     ch_bt1.photo = cfim
     ch_bt1.pack(side = LEFT, padx = 10, pady = 10)
+    
     window1.mainloop()
     
+
 #%%
 def window2(wf = 1):
     #global date
@@ -596,9 +662,9 @@ def window2(wf = 1):
         window2.destroy()
         
         if wf == 1:
-            window3()
+            win3()
         else:
-            window3(1)
+            win3(1)
         
     def bkclick():
         window2.destroy()
@@ -634,13 +700,14 @@ def window2(wf = 1):
     window2.mainloop()
  
 #%%
-def window3(t = None):
+def win3(t = None):
     
     '''
     t is another flag used to instruct the function window3 to call the appropriate function.
     If t = 1, the comp_lin function is called, which enables comparison of two lines
     If t = None, the regular operations are carried out
     '''
+
     
     if t == None: 
         s_st = (st_date + dt.timedelta(0))
@@ -650,12 +717,21 @@ def window3(t = None):
         s_dtip = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))
         s_dti = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(s_dtip[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(s_dtip))]))
     
+        
+        global window3 
+        
         window3 = tk.ThemedTk()
         window3.get_themes()
         window3.set_theme('breeze')
         window3.geometry('1650x1200')
         window3.configure(background= '#ffffff')
-        global frame1, f1l, f1r, f1b, framel, frame2, frame3, f3l, f3r, frameh, frame4, f4l, f4r, f1h, f2h, f3h, f4h
+        
+        '''
+        Certain additional quantities are made global to support outside access
+        '''
+        ''
+        global frame1, f1l, f1r, f1b, framel, frame2, frame3, f3l, f3r, frameh, frame4, f4l, f4r, f1h, f2h, f3h, f4h, etime_cmb3 
+        ''
         framet = tkt.Frame(window3, relief = RAISED, bg = '#1a1410', height = 80)
         framet.pack(side = TOP, fill = X)
         framet.pack_propagate(0)
@@ -679,14 +755,10 @@ def window3(t = None):
     
         def chosen(a):
             global st_time
-            print(a)
-            print(str(e_et))
             st_time = dt.datetime.strptime(a,'%d-%m-%Y %H:%M:%S')
             etime_cmb3.configure(state = 'normal')
             pdi = pd.date_range(start = st_time, end = e_et, freq = '1H')
-            print(pdi)
             pdi = tuple(pdi[np.where(pdi >= pd.to_datetime(end_date))])
-            print(pdi)
             edi = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(pdi[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(pdi))]))
             etime_cmb3['values'] = edi
             etime_cmb3.current(0)       
@@ -726,16 +798,21 @@ def window3(t = None):
            ('Times New Roman', 10,'bold'), 
             foreground = 'black', background = '#ffffff') 
      
-        him = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Heat Map.png'))
-        rcim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Run Charts.png')) 
-        ipim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/View Interactive Plot in Browser.png'))
         
         
         def quitfun():
             if mb.askyesno("Quit", "Do you really wish to quit?"):
                 window3.destroy()
-                for x in globals():
-                    del x
+                '''
+                Deletes the global quantities at exit
+                '''
+                ''
+                x = []
+                for y in globals():
+                    x.append(str(y))
+                for i in range(len(x)):
+                    del globals()[x[i]]
+                ''
                 
         window3.protocol("WM_DELETE_WINDOW", quitfun)
 
@@ -934,26 +1011,53 @@ def window3(t = None):
             if re.search(r"HSL2.csv", file2):
                 line2 = 2
                 
-            dataset2 = pd.read_csv(file2, encoding = 'latin')
+            '''
+            Similar to the main window
+            Initializes a loading window
+            '''
+            ''
+            mbx = Tk()
+            mbx.geometry('300x100')
+            mbx.title('Please Wait')
+            lbx = Label(mbx, text = 'Kindly Wait. Loading', font = ('Arial Bold', 10)).pack()
             
-            if {'Date','Time','Result','Line ID'}.issubset(dataset2.columns):
-                print('')
-            elif{' Date'}.issubset(dataset2.columns):
-                mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
-            elif{' Time'}.issubset(dataset2.columns):
-                mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
-            elif{' Result'}.issubset(dataset2.columns):
-                mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
-            elif{' Date'}.issubset(dataset2.columns):
-                mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
-            else:
-                mb.showerror("Data error", "Selected file does not contain required data set")
+            frflag = 0
+            
+            def preproc():
+                global dataset2
+                dataset2 = pd.read_csv(file2, encoding = 'latin')
                 
-            dataset2['Date time'] = pd.Series([dt.datetime.strptime((dataset2['Date'][i] + ' ' + dataset2['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset2.index])
-            dataset2 = dataset2.sort_values(by = 'Date time')
-            dataset2.index = np.arange(len(dataset2))
-            window2(wf = 2)
-               
+                if {'Date','Time','Result','Line ID'}.issubset(dataset2.columns):
+                    print('')
+                elif{' Date'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
+                elif{' Time'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
+                elif{' Result'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
+                elif{' Date'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
+                else:
+                    mb.showerror("Data error", "Selected file does not contain required data set")
+                    
+                dataset2['Date time'] = pd.Series([dt.datetime.strptime((dataset2['Date'][i] + ' ' + dataset2['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset2.index])
+                dataset2 = dataset2.sort_values(by = 'Date time')
+                dataset2.index = np.arange(len(dataset2))
+                
+                nonlocal frflag
+                frflag = 1
+                
+            def filecheck():
+                if frflag == 1:
+                    mbx.destroy()
+                    window2(wf = 2)
+                if frflag == 0:
+                    mbx.after(500, filecheck)
+                
+            mbx.after(1000, preproc)
+            mbx.after(2000, filecheck)
+            mbx.mainloop()
+            ''
         if l == 'T':
             comp = tk.ThemedTk()
             comp.get_themes()
@@ -1078,6 +1182,8 @@ def window3(t = None):
             def back():
                 for widget in f1r.winfo_children():
                     widget.destroy()
+                for widget in f1b.winfo_children():
+                    widget.destroy()                
                 for widget in f3l.winfo_children():
                     widget.destroy()
                 for widget in f3r.winfo_children():
@@ -1087,6 +1193,16 @@ def window3(t = None):
                 for widget in frame2.winfo_children():
                     if re.search(r"button",widget.winfo_name()):
                         widget.config(state = 'normal')
+                
+                bgim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Go.png'))
+                bim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Back.png'))
+                back_bt = tkt.Button(f1b,image = bim, borderwidth = 0,command = bkclick)
+                back_bt.photo = bim
+                back_bt.pack(side = RIGHT,padx = 10)
+                begin_O = tkt.Button(f1b, image = bgim, borderwidth = 0, command = clicked3)
+                begin_O.photo = bgim
+                begin_O.pack(side = RIGHT, padx = 10)
+                
                 f1l.pack()
                 f3l.pack(side = TOP, padx = 15)
                 res_rd = np.asarray([str(round(100*res[i],2))+'%' for i in range(len(res))])
@@ -1138,8 +1254,6 @@ def window3(t = None):
         res_rd.append(str(res[4]))
         res_rd.append(str(res[5]))
          
-        for widget in frame2.winfo_children():
-            widget.destroy()        
         for widget in f3l.winfo_children():
             widget.destroy()
         for widget in f4l.winfo_children():
@@ -1152,6 +1266,10 @@ def window3(t = None):
         PieChart()
         
         lb1 = Label(f3l, text = 'Line ' + str(line1), font = ('Arial Bold', 16)).pack()
+        
+        him = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Heat Map.png'))
+        rcim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Run Charts.png')) 
+        ipim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/View Interactive Plot in Browser.png'))
         
         image3 = Image.open(dir_path+'/Internship buttons/gear.png')
         image3 = image3.resize((30,30),Image.ANTIALIAS)
@@ -1176,12 +1294,14 @@ def window3(t = None):
         ip = tkt.Button(frame2, image = ipim, borderwidth = 0, command = inplot)
         ip.photo = ipim
             
-        hm.pack(side = LEFT, padx = 10)
-        ip.pack(side = LEFT, padx = 10)
-        Set_bt.pack(side = RIGHT, padx=(10,20))
-        com_lin.pack(side = RIGHT, padx = 10)
-        com_test.pack(side = RIGHT, padx = 10)
-        begin_rep.pack(side = RIGHT, padx = 10)
+        if flag == 0:
+            hm.pack(side = LEFT, padx = 10)
+            ip.pack(side = LEFT, padx = 10)
+            Set_bt.pack(side = RIGHT, padx=(10,20))
+            com_lin.pack(side = RIGHT, padx = 10)
+            com_test.pack(side = RIGHT, padx = 10)
+            begin_rep.pack(side = RIGHT, padx = 10)
+            flag = 1
 
 
 
