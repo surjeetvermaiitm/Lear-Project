@@ -1,9 +1,22 @@
-# sed q#!/usr/bin/env python3
+#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri May 29 14:21:52 2020
+Created on Sat Jun 20 15:31:59 2020
 @author: syshain
 """
+
+
+#%%
+
+'''
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WHERE THE CODE CONTAINS SUCH MULTILINE COMMENTS, NOTE THAT THERE REPRESENT NEW CHANGES TO THE CODE
+NOTE THAT CHANGES IN THE CODE ARE SURROUNDED BY SUCH COMMENTS EXPLAINING THE PURPOSE OF THOSE CHANGES
+'' surrounds the part of the code that actually contains changes
+Look for a \'' following a \'\'' (without the escape sequences ofc)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+'''
 
 #%%
 from tkinter import *
@@ -29,14 +42,12 @@ import seaborn as sns
 import plotly
 import plotly.graph_objs as go
 import plotly.figure_factory as ff
-import datetime
-from datetime import timedelta
 from PIL import ImageTk, Image
 from tkinter import messagebox as mb
 from fpdf import FPDF
 import os
 import time
-pattern = r"Unnamed"
+pattern = r"!button"
 dataset = []
 dataset2 = []
 dataA = []
@@ -47,43 +58,81 @@ i_bn = 0
 i_end = 0
 runhrs = 1
 chosen = " "
-st_date = dt.datetime.now()
-sd2 = dt.datetime.now()
-end_date = dt.datetime.now()
-ed2 = dt.datetime.now()
-st_time = dt.datetime.now()
-st2 = dt.datetime.now()
-end_time = dt.datetime.now()
-et2 = dt.datetime.now()
 p_table = []
 flag = 0
-plot_flag = {'AvPlot':0,'QPlot':0,'PerPlot':0,'OPlot':0,'HeatMap':0,'Pie':0}
-'Dictionary that stores 1 if the relevant plot has been plotted as an image and 0 otherwise'
-cm_flag = 0
-'Flag that stores 1 if the start time has been chosen, 0 if not. End time combobox is activated if flag is true'
 res = []
 res2 = []
-#res_rd = []
+availability_hrly = []
+quality_hrly = []
+OEE_hrly = []
+performance_hrly = []  
+ok_hrly = []
+ng_hrly = []
+nameslst = ['Availability','Quality','Performance','OEE','Ok','No Go']
+calcflag = 0
 dir_path = os.path.dirname(os.path.realpath(__file__))
 backend_ = "Qt5Agg"
-Shift1_start = datetime.time(7,0,0)
-Shift1_end = datetime.time(15,30,0)
-Shift2_start = datetime.time(15,30,0)
-Shift2_end = datetime.time(23,59,59)
-Shift3_start = datetime.time(0,0,0)
-Shift3_end = datetime.time(7,0,0)
+line1 = 1
+line2 = 2
+Shift1_start = dt.time(7,0,0)
+Shift1_end = dt.time(15,30,0)
+Shift2_start = dt.time(15,30,0)
+Shift2_end = dt.time(23,59,59)
+Shift3_start = dt.time(0,0,0)
+Shift3_end = dt.time(7,0,0)
 #%%
 
 class table:
-    def __init__(self, root, lst):
+    
+    def listform(self, root, lst, buttonflag):
         self.rows = len(lst)
         self.columns = len(lst[0])
-        for i in range(self.rows):
+        style = Style() 
+        style.configure('W.TButton', font = ('Times New Roman', 10,'bold'), foreground = 'black', background = '#ffffff') 
+        
+        self.fr1 = tkt.Frame(root, relief = FLAT, bg = '#ffffff')
+        self.fr1.pack(side = TOP)
+        self.fr2 = tkt.Frame(root, relief = FLAT, bg = '#ffffff')
+        self.fr2.pack(side = TOP)
+        
+        if buttonflag == 'True':
+            self.b0 = Button(self.fr1, width = 12, text = 'Availability', style = 'W.TButton', command = lambda : RunCharts(plotflag = 0))
+            self.b0.pack(side = LEFT, padx = 5)
+            self.b1 = Button(self.fr1, width = 12, text = 'Quality', style = 'W.TButton', command = lambda : RunCharts(plotflag = 1))
+            self.b1.pack(side = LEFT, padx = 5)
+            self.b2 = Button(self.fr1, width = 12, text = 'Performance', style = 'W.TButton', command = lambda : RunCharts(plotflag = 2))
+            self.b2.pack(side = LEFT, padx = 5)
+            self.b3 = Button(self.fr1, width = 12, text = 'OEE', style = 'W.TButton', command = lambda : RunCharts(plotflag = 3))
+            self.b3.pack(side = LEFT, padx = 5)
+            self.b4 = Button(self.fr1, width = 12, text = 'OK', style = 'W.TButton', command = lambda : RunCharts(plotflag = 4))
+            self.b4.pack(side = LEFT, padx = 5)
+            self.b5 = Button(self.fr1, width = 12, text = 'No GO', style = 'W.TButton', command = lambda : RunCharts(plotflag = 5))
+            self.b5.pack(side = LEFT, padx = 5)
+        
+        for i in range(self.rows):           
+            for j in range(self.columns):
+                if buttonflag == 'False' and i==0:
+                    self.e = Label(self.fr1, width = 15, text = str(lst[i][j]), font = ('Times New Roman', 10), relief = FLAT, foreground = 'black', background= '#ffffff')
+                    self.e.pack(side = LEFT, padx = 13)                    
+                if i==1:
+                    self.e = Label(self.fr2, width = 15, text = str(lst[i][j]), font = ('Times New Roman', 10), relief = FLAT, foreground = 'black', background= '#ffffff')
+                    self.e.pack(side = LEFT, padx = 13)
+                    
+    def tableform(self, root, lst):
+         self.rows = len(lst)
+         self.columns = len(lst[0])
+         for i in range(self.rows):
             self.fr = Frame(root)
             self.fr.pack(side = TOP)
             for j in range(self.columns):
-                self.e = Label(self.fr, width = 20, text = str(lst[i][j]), font = ('Arial Bold',18), relief = RAISED, foreground = 'blue', background= 'yellow', borderwidth = 1)
-                self.e.pack(side = LEFT)
+                self.e = Label(self.fr, width = 20, text = str(lst[i][j]), font = ('Arial Bold',18), relief = RAISED, foreground = 'black', background= 'white', borderwidth = 1)
+                self.e.pack(side = LEFT)       
+    
+    def __init__(self, root, lst, buttonflag = 'False', testflag = 0):
+        if testflag == 0 :
+            self.listform(root, lst, buttonflag)
+        if testflag == 1:
+            self.tableform(root, lst)
 
 #%%
 def calc_cycle_time():
@@ -123,12 +172,17 @@ def calc_duration_parameters(st, et, l = None, wf = 1):
     time = data['Time']
     result = data['Result']
     DT_column = data['Date time']
-    
-    i_bn = np.where(DT_column > st)[0][0]
-    i_end = np.where(DT_column > et)[0][0]
+    print(st,et)
+    try:
+        i_bn = np.where(DT_column > st)[0][0]
+        i_end = np.where(DT_column > et)[0][0]
+    except IndexError:
+        mb.showerror('Error','Time Range is out of bounds')
+        window3.mainloop()
     dt_relevant = DT_column[i_bn:i_end]
     result_relevant = result[i_bn:i_end]
     time_part = pd.to_timedelta('00:00:01')*parttime
+        
     
     if(len(dt_relevant)>0):
         time_differences = np.asarray([dt_relevant[i+1]-dt_relevant[i] for i in (dt_relevant.index[0] + np.arange(len(dt_relevant)-1))])
@@ -147,8 +201,10 @@ def calc_duration_parameters(st, et, l = None, wf = 1):
         quality = 0
         OEE  = 0 
         performance = 0
+        no_ok = 0
+        no_ng = 0
     
-    res = [availability, quality, OEE, performance]
+    res = [availability, quality, OEE, performance, no_ok, no_ng]
        
     #if(l == 'A'):
       # resA = res
@@ -161,25 +217,26 @@ def calc_duration_parameters(st, et, l = None, wf = 1):
     return res
 
 #%%
-def htmp_calc(l = None):
+def htmp_calc():
     'This cell prepares the data for calculation of hourly quantities'
     global p_table
-    
-    if(l == None or l == 'P'):
-        data = dataset
-    if(l == 'A'):
-        data = dataA
-    if(l == 'B'):
-        data = dataB
-        
+    data = dataset
+
     timear = data['Date time']
     result = data['Result']
     hourly_distribution = []
     result_hrly = []
     onehr = pd.to_timedelta('1:00:00')
-    starttime = dt_relevant[i_bn]
+    
+    try:
+        starttime = dt_relevant[i_bn]
+        print(starttime, timear)
+    except IndexError:
+        mb.showerror('Error','Time range is out of bounds')
+        window3.mainloop()
+                
     starttime = starttime.replace(second = 0, minute = 0)
-    rel_rge = (end_time - st_time).seconds/3600 + (end_time-st_time).days*24
+    rel_rge = (end_time - starttime).seconds/3600 + (end_time-starttime).days*24
     num = Hmapxt
     
     for i in range(int(rel_rge)):
@@ -196,9 +253,9 @@ def htmp_calc(l = None):
         
     'This cell calculates the most important quantities relating to the final calculations'    
     ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
-    st2 = st_time + dt.timedelta(hours = 1)
+    st2 = starttime + dt.timedelta(hours = 1)
     et2 = end_time - dt.timedelta(hours = 1)
-    h1 = np.array([[str(i)]*divn for i in pd.date_range(st_time, et2, freq = '1H')]).flatten()
+    h1 = np.array([[str(i)]*divn for i in pd.date_range(starttime, et2, freq = '1H')]).flatten()
     h2 = np.array([[str(i)]*divn for i in pd.date_range(st2, end_time, freq = '1H')]).flatten()
     m1 = np.arange(num, 60+num ,num)
     m2 = m1-num
@@ -212,152 +269,25 @@ def htmp_calc(l = None):
     p_table.columns = p_table.columns.reindex(in2)[0]
     return p_table        
 
-#%%    
-def availability_plot(plflag, l = None):
-    global plot_flag
-    avg = availability_hrly.mean()* np.ones(int(no_hrs/runhrs))
-    std = availability_hrly.std()* np.ones(int(no_hrs/runhrs))
-    
-    upper_1 = avg + std*1
-    upper_2 = avg + std*2
-    upper_3 = avg + std*3
-    lower_1 = avg - std*1
-    lower_2 = avg - std*2
-    lower_3 = avg - std*3
-    
-    if(plflag == 0):
-        f = Figure(figsize=(10,10))
-        a = f.add_subplot(111)
-        
-        #if(plot_flag['AvPlot']==0):
-    
-        a.plot(hours, availability_hrly, 'b-')
-        a.plot(hours, upper_1 , 'r--')
-        a.plot(hours, upper_2 , 'r--')
-        a.plot(hours, upper_3 , 'r--')
-        a.plot(hours, avg, 'g-')
-        a.plot(hours, lower_1 , 'r--')
-        a.plot(hours, lower_2 , 'r--')
-        a.plot(hours, lower_3 , 'r--')
-        a.set_title('Availability Run Chart', fontsize = 16)
-        a.set_xlabel('Hours')
-        a.set_ylabel('Availability')
-        
-        if(l=='P'):
-            f.savefig(dir_path + '/temp/availability.png')
-        else:
-            availability_plot = tk.ThemedTk()
-            availability_plot.get_themes()
-            availability_plot.set_theme('clearlooks')
-            availability_plot.geometry('1200x1200')
-            availability_plot.title('Availability Run Chart')
-            canvas = FigureCanvasTkAgg(f,availability_plot)
-            canvas.draw()
-            canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)
-            toolbar = NavigationToolbar2Tk(canvas,availability_plot)
-            toolbar.update()
-            canvas._tkcanvas.pack(side = TOP, fill= X, expand=True)
-            plot_flag['AvPlot'] = 1
-            availability_plot.mainloop()    
-       # else:
-        #    canvas = Canvas(availability_plot)
-         #   canvas.pack()
-          #  img = ImageTk.PhotoImage(Image.open(dir_path+'/temp/availability.png'))
-           # canvas.create_image(20,20, anchor = NW, image = img)
-
-
-        mlb.use(backend_)   
-           
-    else:
-        fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x = hours, y  = availability_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'Avaiability'))
-        fig1.add_trace(go.Scatter(x = hours, y = upper_1, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
-        fig1.add_trace(go.Scatter(x = hours, y = upper_2, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
-        fig1.add_trace(go.Scatter(x = hours, y = upper_3, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
-        fig1.add_trace(go.Scatter(x = hours, y = avg, mode = 'lines', line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
-        fig1.add_trace(go.Scatter(x = hours, y = lower_1, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
-        fig1.add_trace(go.Scatter(x = hours, y = lower_2, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
-        fig1.add_trace(go.Scatter(x = hours, y = lower_3, mode = 'lines', line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
-        fig1.update_layout(title = {'text':'Hourly Availability Plot', 'x':0.5, 'y':0.95, 'xanchor':'center', 'yanchor':'top'}, yaxis_title = 'Availability', xaxis_title = 'Hours',font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
-        fig1 = fig1.to_plotly_json() 
-        plotly.offline.plot(fig1)
-    
 #%%
 
-def quality_plot(plflag, l = None):
-    global plot_flag
-    avg = quality_hrly.mean()* np.ones(int(no_hrs/runhrs))
-    std = quality_hrly.std()* np.ones(int(no_hrs/runhrs))
+def rcplot(plotflag, plflag = 0, l = None):
     
-    upper_1 = avg + std*1
-    upper_2 = avg + std*2
-    upper_3 = avg + std*3
-    lower_1 = avg - std*1
-    lower_2 = avg - std*2
-    lower_3 = avg - std*3
-   
-    if(plflag == 0):
-     
-     f = Figure(figsize=(10,10))
-     a = f.add_subplot(111)
-     #if(plot_flag['QPlot'] == 0):
-     a.plot(hours, quality_hrly, 'b-')
-     a.plot(hours, upper_1 , 'r--')
-     a.plot(hours, upper_2 , 'r--')
-     a.plot(hours, upper_3 , 'r--')
-     a.plot(hours, avg, 'g-')
-     a.plot(hours, lower_1 , 'r--')
-     a.plot(hours, lower_2 , 'r--')
-     a.plot(hours, lower_3 , 'r--')
-     a.set_title('Quality Run Chart', fontsize = 16)
-     a.set_xlabel('Hours')
-     a.set_ylabel('Quality')
+    if plotflag == 0:
+        hrplt = availability_hrly
+    if plotflag == 1:
+        hrplt = quality_hrly
+    if plotflag == 2:
+        hrplt = performance_hrly
+    if plotflag == 3:
+        hrplt = OEE_hrly
+    if plotflag == 4:
+        hrplt = ok_hrly
+    if plotflag == 5:
+        hrplt = ng_hrly
         
-     if l == 'P':
-        f.savefig(dir_path + '/temp/quality.png')  
-     
-     else:
-         quality_plot = tk.ThemedTk()
-         quality_plot.get_themes()
-         quality_plot.set_theme('clearlooks')
-         quality_plot.geometry('1200x1200')
-         quality_plot.title('Quality Run Chart') 
-         canvas = FigureCanvasTkAgg(f,quality_plot)
-         canvas.draw()
-         canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)   
-         toolbar = NavigationToolbar2Tk(canvas,quality_plot)
-         toolbar.update()
-         canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
-         plot_flag['QPlot'] = 1
-         quality_plot.mainloop()   
-     #else:
-         #canvas = Canvas(availability_plot)
-         #canvas.pack()
-         #canvas.create_image(20,20, anchor = NW, image = img)
-         #img = ImageTk.PhotoImage(Image.open(dir_path+'/temp/quality.png'))
-
-     mlb.use(backend_)
-    
-    else:
-     fig1 = go.Figure()
-     fig1.add_trace(go.Scatter(x = hours, y  = quality_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'Quality'))
-     fig1.add_trace(go.Scatter(x = hours, y = upper_1, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
-     fig1.add_trace(go.Scatter(x = hours, y = upper_2, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
-     fig1.add_trace(go.Scatter(x = hours, y = upper_3, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
-     fig1.add_trace(go.Scatter(x = hours, y = avg, line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
-     fig1.add_trace(go.Scatter(x = hours, y = lower_1, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
-     fig1.add_trace(go.Scatter(x = hours, y = lower_2, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
-     fig1.add_trace(go.Scatter(x = hours, y = lower_3, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
-     fig1.update_layout(title = dict(text = 'Hourly Quality Plot', x = 0.5, y = 0.95, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Hours', yaxis_title = 'Quality', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
-     fig1 = fig1.to_plotly_json() 
-     plotly.offline.plot(fig1)
-
-#%%
-
-def OEE_plot(plflag, l=None):
-    global plot_flag
-    avg = OEE_hrly.mean()* np.ones(int(no_hrs/runhrs))
-    std = OEE_hrly.std()* np.ones(int(no_hrs/runhrs))
+    avg = hrplt.mean()*np.ones(int(no_hrs/runhrs))
+    std = hrplt.std()*np.ones(int(no_hrs/runhrs))
     
     upper_1 = avg + std*1
     upper_2 = avg + std*2
@@ -365,81 +295,14 @@ def OEE_plot(plflag, l=None):
     lower_1 = avg - std*1
     lower_2 = avg - std*2
     lower_3 = avg - std*3
-
-
-    if(plflag == 0):
-        f = Figure(figsize=(10,10))
-        a = f.add_subplot(111)   
-        #if(plot_flag['OPlot']==0):
-        a.plot(hours, OEE_hrly, 'b-')
-        a.plot(hours, upper_1 , 'r--')
-        a.plot(hours, upper_2 , 'r--')
-        a.plot(hours, upper_3 , 'r--')
-        a.plot(hours, avg, 'g-')
-        a.plot(hours, lower_1 , 'r--')
-        a.plot(hours, lower_2 , 'r--')
-        a.plot(hours, lower_3 , 'r--')
-        a.set_title('OEE Run Chart', fontsize = 16)
-        a.set_xlabel('Hours')
-        a.set_ylabel('OEE')  
-        
-        if l == 'P':
-            f.savefig(dir_path + '/temp/oee.png')            
-        else:
-            OEE_plot = tk.ThemedTk()
-            OEE_plot.get_themes()
-            OEE_plot.set_theme('clearlooks')
-            OEE_plot.geometry('1200x1200')
-            OEE_plot.title('OEE Run Chart')    
-            
-            canvas = FigureCanvasTkAgg(f,OEE_plot)
-            canvas.draw()
-            canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)       
-            toolbar = NavigationToolbar2Tk(canvas,OEE_plot)
-            toolbar.update()
-            canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
-            plot_flag['OPlot'] = 1
-            #else:
-             #canvas = Canvas(availability_plot)
-             #canvas.pack()
-             #img = ImageTk.PhotoImage(Image.open(dir_path+'/temp/oee.png'))
-             #canvas.create_image(20,20, anchor = NW, image = img)         
-            OEE_plot.mainloop() 
-            
-        mlb.use(backend_)
-    else:
-        fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x = hours, y  = OEE_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'OEE'))
-        fig1.add_trace(go.Scatter(x = hours, y = upper_1, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
-        fig1.add_trace(go.Scatter(x = hours, y = upper_2, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
-        fig1.add_trace(go.Scatter(x = hours, y = upper_3, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
-        fig1.add_trace(go.Scatter(x = hours, y = avg, line  = dict(color = 'green', dash = 'dash'), name = 'Mean value'))
-        fig1.add_trace(go.Scatter(x = hours, y = lower_1, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
-        fig1.add_trace(go.Scatter(x = hours, y = lower_2, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
-        fig1.add_trace(go.Scatter(x = hours, y = lower_3, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
-        fig1.update_layout(title = {'text':"Hourly OEE plot", 'x':0.5, 'y':0.95,'xanchor':'center', 'yanchor':'top'}, xaxis_title = 'Hours', yaxis_title = 'Availability', font = dict(family = 'Courier New, monospace', color = '#7f7f7f', size = 20))
-        fig1 = fig1.to_plotly_json() 
-        plotly.offline.plot(fig1)
-
-#%%
-
-def performance_plot(plflag , l = None):
-    global plot_flag
-    avg = performance_hrly.mean()* np.ones(int(no_hrs/runhrs))
-    std = performance_hrly.std()* np.ones(int(no_hrs/runhrs))
     
-    upper_1 = avg + std*1
-    upper_2 = avg + std*2
-    upper_3 = avg + std*3
-    lower_1 = avg - std*1
-    lower_2 = avg - std*2
-    lower_3 = avg - std*3
-
+    title = str(nameslst[plotflag]) + ' Run Chart'
+    hours = pd.date_range(start = st_time + dt.timedelta(hours = runhrs), end = end_time, freq = dt.timedelta(hours=runhrs))
     if(plflag == 0):
         f = Figure(figsize=(10,10))
         a = f.add_subplot(111)  
         #if(plot_flag['PerPlot'] == 0):
-        a.plot(hours, performance_hrly, 'b-')
+        a.plot(hours, hrplt, 'b-')
         a.plot(hours, upper_1 , 'r--')
         a.plot(hours, upper_2 , 'r--')
         a.plot(hours, upper_3 , 'r--')
@@ -447,37 +310,31 @@ def performance_plot(plflag , l = None):
         a.plot(hours, lower_1 , 'r--')
         a.plot(hours, lower_2 , 'r--')
         a.plot(hours, lower_3 , 'r--')
-        a.set_title('Performance Run Chart', fontsize = 16)
+        a.set_title(title, fontsize = 16)
         a.set_xlabel('Hours')
-        a.set_ylabel('Performance')
+        a.set_ylabel(str(nameslst[plotflag]))
         
         if l == 'P':
-            f.savefig(dir_path + '/temp/performance.png')           
+            f.savefig(dir_path + '/temp/'+str(nameslst[plotflag])+'.png')           
         else: 
-            performance_plot = tk.ThemedTk()
-            performance_plot.get_themes()
-            performance_plot.set_theme('clearlooks')
-            performance_plot.geometry('1200x1200')
-            performance_plot.title('Performance Run Chart')
-           
+            rc_plot_win = tk.ThemedTk()
+            rc_plot_win.get_themes()
+            rc_plot_win.set_theme('clearlooks')
+            rc_plot_win.geometry('1200x1200')
+            rc_plot_win.title(title)           
     
-            canvas = FigureCanvasTkAgg(f,performance_plot)
+            canvas = FigureCanvasTkAgg(f,rc_plot_win)
             canvas.draw()
             canvas.get_tk_widget().pack(side = TOP, fill= BOTH, expand=True)       
-            toolbar = NavigationToolbar2Tk(canvas,performance_plot)
+            toolbar = NavigationToolbar2Tk(canvas,rc_plot_win)
             toolbar.update()
-            canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)
-            plot_flag['PerPlot'] = 1
-            #else:
-             #canvas = Canvas(availability_plot)
-             #canvas.pack()
-             #img = ImageTk.PhotoImage(Image.open(dir_path+'/temp/performance.png'))
-             #canvas.create_image(20,20, anchor = NW, image = img)            
-            performance_plot.mainloop()
-        mlb.use(backend_)
+            canvas._tkcanvas.pack(side = TOP, fill= BOTH, expand=True)           
+            rc_plot_win.mainloop()             
+            return 
+
     else:
         fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x = hours, y  = performance_hrly, mode = 'markers+lines', line = dict(color = 'blue'), name = 'performance'))
+        fig1.add_trace(go.Scatter(x = hours, y = hrplt, mode = 'markers+lines', line = dict(color = 'blue'), name = 'performance'))
         fig1.add_trace(go.Scatter(x = hours, y = upper_1, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 1'))
         fig1.add_trace(go.Scatter(x = hours, y = upper_2, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 2'))
         fig1.add_trace(go.Scatter(x = hours, y = upper_3, line  = dict(color = 'red', dash = 'dash'), name = 'Upper limit 3'))
@@ -485,66 +342,265 @@ def performance_plot(plflag , l = None):
         fig1.add_trace(go.Scatter(x = hours, y = lower_1, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 1'))
         fig1.add_trace(go.Scatter(x = hours, y = lower_2, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 2'))
         fig1.add_trace(go.Scatter(x = hours, y = lower_3, line  = dict(color = 'red', dash = 'dash'), name = 'Lower limit 3'))
-        fig1.update_layout(title = dict(text = 'Hourly Performance Plot', x = 0.5, y = 0.95, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Hours', yaxis_title = 'Performance', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
+        fig1.update_layout(title = dict(text = title, x = 0.5, y = 0.95, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Hours', yaxis_title = str(nameslst[plotflag]), font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))
         fig1 = fig1.to_plotly_json() 
         plotly.offline.plot(fig1)
 
+
+#%%
+def PieChartDraw(results, fr):
+    
+    global PD_hrs, st_planned, end_planned, Shift1_PD, Shift2_PD, Shift3_PD
+    OEE = results[2]
+    no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
+     #[availability, quality, OEE, performance]
+ #   AVailability = (1-Unplanned/Total)
+    UPD_hrs = (1-results[0])*no_hrs
+ 
+    with open("data.txt") as f:
+        dicts = eval(f.read())
+        Shift1_PD = float(dicts['Shift 1'])/60
+        Shift2_PD = float(dicts['Shift 2'])/60
+        Shift3_PD = float(dicts['Shift 3'])/60
+    f.close()
+    PD_hrs = 0 
+    if Shift1_start < st_time.time()<= Shift1_end:
+        PD_hrs = ((dt.datetime.combine(dt.datetime.today(),Shift1_end)-dt.datetime.combine(dt.datetime.today(),st_time.time())).seconds/((dt.datetime.combine(dt.datetime.today(),Shift1_end)-dt.datetime.combine(dt.datetime.today(),Shift1_start)).seconds))*Shift1_PD
+        st_planned = dt.datetime.combine(st_time.date(),Shift1_end)
+    elif Shift2_start< st_time.time()<= Shift2_end:
+        PD_hrs = ((dt.datetime.combine(dt.datetime.today(),Shift2_end)-dt.datetime.combine(dt.datetime.today(),st_time.time())).seconds/((dt.datetime.combine(dt.datetime.today(),Shift2_end)-dt.datetime.combine(dt.datetime.today(),Shift2_start)).seconds))*Shift2_PD
+        st_planned = dt.datetime.combine(st_time.date()+timedelta(days=1),dt.time(0,0))
+    elif Shift3_start<= st_time.time()<= Shift3_end:
+        PD_hrs = ((dt.datetime.combine(dt.datetime.today(),Shift3_end)-dt.datetime.combine(dt.datetime.today(),st_time.time())).seconds/((dt.datetime.combine(dt.datetime.today(),Shift3_end)-dt.datetime.combine(dt.datetime.today(),Shift3_start)).seconds))*Shift3_PD
+        st_planned = dt.datetime.combine(st_time.date(),Shift3_end)
+
+    if Shift1_start < end_time.time()<= Shift1_end:
+        PD_hrs = PD_hrs+ ((dt.datetime.combine(dt.datetime.today(),end_time.time())-(dt.datetime.combine(dt.datetime.today(),Shift1_start))).seconds/((dt.datetime.combine(dt.datetime.today(),Shift1_end)-dt.datetime.combine(dt.datetime.today(),Shift1_start)).seconds))*Shift1_PD
+        end_planned = dt.datetime.combine(end_time.date(),Shift1_start)
+    elif Shift2_start< end_time.time()<= Shift2_end:
+        PD_hrs = PD_hrs+ ((dt.datetime.combine(dt.datetime.today(),end_time.time())-(dt.datetime.combine(dt.datetime.today(),Shift2_start))).seconds/((dt.datetime.combine(dt.datetime.today(),Shift2_end)-dt.datetime.combine(dt.datetime.today(),Shift2_start)).seconds))*Shift2_PD
+        end_planned = dt.datetime.combine(end_time.date(),Shift2_start)
+    elif Shift3_start<= end_time.time()<= Shift3_end:
+        PD_hrs = PD_hrs+ ((dt.datetime.combine(dt.datetime.today(),end_time.time())-(dt.datetime.combine(dt.datetime.today(),Shift3_start))).seconds/((dt.datetime.combine(dt.datetime.today(),Shift3_end)-dt.datetime.combine(dt.datetime.today(),Shift3_start)).seconds))*Shift3_PD
+        end_planned = dt.datetime.combine(end_time.date(),Shift3_start)
+
+    while(st_planned< end_planned):
+        if st_planned.time() == Shift1_start:
+            PD_hrs = PD_hrs+Shift1_PD
+            st_planned = st_planned+ pd.to_timedelta('08:30:00')
+        elif st_planned.time() == Shift2_start:
+            PD_hrs = PD_hrs+Shift2_PD
+            st_planned = st_planned+ pd.to_timedelta('08:30:00')
+        elif st_planned.time() == Shift3_start:
+            PD_hrs = PD_hrs+Shift3_PD
+            st_planned = st_planned+ pd.to_timedelta('07:00:00')
+    
+    if PD_hrs<UPD_hrs:
+        UPD_hrs = UPD_hrs-PD_hrs
+    elif PD_hrs>= UPD_hrs:
+        PD_hrs = UPD_hrs
+        UPD_hrs = 0
+
+    # Availability removing Planned Downtime
+    Avail_PD = 1 - np.divide(PD_hrs,((end_time-st_time).seconds/3600) + (end_time-st_time).days*24)
+    Avail_UPD = 1 - np.divide(UPD_hrs,((end_time-st_time).seconds/3600) + (end_time-st_time).days*24)
+    # Planned Downtime: All shifts have different planned downtime hours. 
+    Quality = results[1]
+    OEE= results[2]
+    Performance = results[3]    
+    
+    PD_loss = (1-Avail_PD)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
+    UD_loss = (1-Avail_UPD)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
+    P_loss = (1-Performance)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
+    Q_loss = (1-Quality)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
+    
+    backend_ =  mlb.get_backend() 
+    mlb.use("Agg") 
+    
+    labels = ["OEE", 'PD_Loss','UD_Loss', 'P_Loss','Q_Loss']
+    values = [OEE*360, PD_loss*360,UD_loss*360, P_loss*360, Q_loss*360]
+
+    colors = ['Green','#33F3FF','Yellow', 'Red', 'DarkRed'] 
+    explode =(0,0,0.1,0,0.1)
+    
+    print(values)
+    
+    f = plt.figure(figsize=(10,10))
+    a = f.add_subplot(111)
+    a.pie(values, explode = explode, colors=colors, startangle=90, autopct='%.1f%%', shadow = True) 
+    a.legend(labels, loc = 'upper right')
+    f.savefig(dir_path+'/temp/pie.png')
+    mlb.use(backend_)
+    
+    canvas = FigureCanvasTkAgg(f,fr)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill= BOTH, expand=True)
+    
+#%%
+def printout(fr, res_rd, wf, testflag = 0):
+
+    if testflag == 0:
+        lst = [('Availability','Quality','Performance','OEE','Ok','No Go'),(res_rd[0],res_rd[1],res_rd[3],res_rd[2],res_rd[4],res_rd[5])]
+    
+        if wf == 1:
+            table(fr, lst, buttonflag = 'True')
+        if wf == 2:
+            table(fr, lst)
+            
+    if testflag == 1:
+        lst = np.transpose([('Availability','Quality','Performance','OEE','Ok','No Go'),(res_rd[0],res_rd[1],res_rd[3],res_rd[2],res_rd[4],res_rd[5])])
+        table(fr, lst, testflag = 1)
+
+    
+#%%
+def RunCharts(plotflag, interactive = 0, l = None):
+        
+    global calcflag
+    
+    if calcflag == 0:
+        
+        global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, ok_hrly, ng_hrly, hours, no_hrs
+        '''
+        The following lines of code are added to ensure that the hourly 
+        quantities are initialized as lists everytime a new calculation 
+        is started
+        '''
+        ''
+        availability_hrly = []
+        quality_hrly = []
+        OEE_hrly = []
+        performance_hrly = []
+        ok_hrly = []
+        ng_hrly = []
+        ''
+        
+        st = st_time
+        et = end_time
+        hours = pd.date_range(start = st + dt.timedelta(hours = runhrs), end = et, freq = dt.timedelta(hours=runhrs))
+        no_hrs = int((et - st).seconds/3600) + 24*(end_time-st_time).days
+    
+        for i in range(int(no_hrs/runhrs)):
+            hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = runhrs))
+            print(hr_res)
+            availability_hrly.append(hr_res[0])
+            quality_hrly.append(hr_res[1])
+            OEE_hrly.append(hr_res[2])
+            performance_hrly.append(hr_res[3])
+            ok_hrly.append(hr_res[4])
+            ng_hrly.append(hr_res[5])
+            st = st+dt.timedelta(hours = runhrs)
+                
+        availability_hrly = np.array(availability_hrly)
+        quality_hrly = np.array(quality_hrly)
+        OEE_hrly = np.array(OEE_hrly)
+        performance_hrly = np.array(performance_hrly)
+        ok_hrly = np.array(ok_hrly)
+        ng_hrly = np.array(ng_hrly)
+    
+        calcflag = 1
+    
+    rcplot(plotflag, plflag = interactive, l = l)
+    
 #%%
 'Defining the GUI'
 def main():
     window1 = tk.ThemedTk()
     window1.get_themes()
     window1.set_theme('breeze')
-    window1.configure(background= '#ffc3a0')
+    window1.configure(background= '#1a1410')
     window1.title('Lear Remote Internship')
     window1.geometry('500x300')
-    fr1 = Frame(window1, relief = RAISED, borderwidth = 1, height = 300)
+    fr1 = tkt.Frame(window1, relief = FLAT, height = 300, bg = '#1a1410')
     fr1.pack(pady = 50)
-    wel_lb1 = ttk.Label(fr1, text = 'Welcome', font = ('latin modern roman',20))
+    wel_lb1 = tkt.Label(fr1, text = 'Welcome', font = ('latin modern roman',30), foreground = '#ffffff', bg = '#1a1410')
     wel_lb1.pack(side = TOP, pady = 20)
-    ch_lbl1 = ttk.Label(fr1, text = 'Choose the input data file', font = ('latin modern roman',15))
+    ch_lbl1 = tkt.Label(fr1, text = 'Choose the input data file', font = ('latin modern roman',15), foreground = '#ffffff', bg = '#1a1410')
     ch_lbl1.pack(side = LEFT, padx = 20, pady = 10)
     style = Style() 
     style.configure('W.TButton', font =
        ('Times New Roman', 12, 'bold'), 
-        foreground = 'red', background = '#0000FF')
+        foreground = '#ea1313', background = '#ffffff')
     
     def clicked1():
-        file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
-        global dataset 
-        dataset = pd.read_csv(file, encoding = 'latin1')
+        global line1, dataset
         
-        if {'Date','Time','Result','Line ID'}.issubset(dataset.columns):
-            print('')
-        elif{' Date'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
-            window1.mainloop()
-        elif{' Time'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
-            window1.mainloop()
-        elif{' Result'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
-            window1.mainloop()
-        elif{' Date'}.issubset(dataset.columns):
-            mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
-            window1.mainloop()
-        else:
-            mb.showerror("Data error", "Selected file does not contain required data set")
-            window1.mainloop()
+        file = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
+        
+        if re.search(r"HSL1.csv",file):
+            line1 = 1
+        if re.search(r"HSL2.csv",file):
+            line1 = 2       
+
+        '''
+        Changes are being made to try and include a window that will load once preprocessing of the dataset starts
+        '''
+        ''
+        mbx = Tk()
+        mbx.geometry('300x100')
+        mbx.title('Please Wait')
+        lbx = Label(mbx, text = 'Kindly Wait. Loading', font = ('Arial Bold', 10)).pack()
+        
+        frflag = 0
+        ''
+        def preproc():
+            global dataset
+            dataset = pd.read_csv(file, encoding = 'latin1')
             
-        dataset['Date time'] = pd.Series([dt.datetime.strptime((dataset['Date'][i]+' '+dataset['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset.index])
-        dataset = dataset.sort_values(by = 'Date time')
-        dataset.index = np.arange(len(dataset))
-        calc_cycle_time()
-        window1.destroy()
-        window2(wf = 1)
+            if {'Date','Time','Result','Line ID'}.issubset(dataset.columns):
+                print('')
+            elif{' Date'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
+                window1.mainloop()
+            elif{' Time'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
+                window1.mainloop()
+            elif{' Result'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
+                window1.mainloop()
+            elif{' Date'}.issubset(dataset.columns):
+                mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
+                window1.mainloop()
+            else:
+                mb.showerror("Data error", "Selected file does not contain required data set")
+                window1.mainloop()
+            
+            dataset['Date time'] = pd.Series([dt.datetime.strptime((dataset['Date'][i]+' '+dataset['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset.index])
+            dataset = dataset.sort_values(by = 'Date time')
+            dataset.index = np.arange(len(dataset))
+            
+            ''
+            nonlocal frflag
+            frflag = 1
+            
+        def filecheck():
+            if frflag == 1:
+                mbx.destroy()
+                calc_cycle_time()
+                window1.destroy()
+                window2(wf = 1)
+            if frflag == 0:
+                mbx.after(500, filecheck)
+                
+        mbx.after(1000, preproc)
+        mbx.after(2000, filecheck)
+        mbx.lift()
+        mbx.call('wm', 'attributes', '.', '-topmost', True)
+        mbx.mainloop()
+        ''
+        '''
+        This is equivalent to the progressbar except it is simply a window
+        '''
+
+        
         
     cfim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Choose File.png'))
     ch_bt1 = tkt.Button(fr1, image = cfim, borderwidth = 0,command = clicked1)
     ch_bt1.photo = cfim
     ch_bt1.pack(side = LEFT, padx = 10, pady = 10)
+    
     window1.mainloop()
     
+
 #%%
 def window2(wf = 1):
     #global date
@@ -560,11 +616,11 @@ def window2(wf = 1):
     window2 = tk.ThemedTk()
     window2.get_themes()
     window2.set_theme('breeze')
-    window2.configure(background= '#ffc3a0')
-    window2.geometry('850x300')
-    fr1 = Frame(window2, relief = RAISED,borderwidth = 1)
+    window2.configure(background= '#ffffff')
+    window2.geometry('850x100')
+    fr1 = tkt.Frame(window2, relief = RAISED,borderwidth = 1, bg = '#ffffff')
     fr1.pack(side = TOP, fill = X)
-    fr2 = Frame(window2)
+    fr2 = tkt.Frame(window2, bg = '#ffffff')
     fr2.pack(side = TOP, fill = X)
     window2.title('Date selection')
     sdate_lbl2 = Label(fr1, text = 'Choose starting date')
@@ -593,8 +649,8 @@ def window2(wf = 1):
     end_cmb2.pack(side = LEFT, padx = 5)
     style = Style() 
     style.configure('W.TButton', font =
-       ('Times New Roman', 12, 'bold'), 
-        foreground = 'red', background = '#0000FF')
+       ('Times New Roman', 10, 'bold'), 
+        foreground = 'black', background = '#ffffff')
  
     
     def clicked2():
@@ -612,12 +668,14 @@ def window2(wf = 1):
         window2.destroy()
         
         if wf == 1:
-            window3()
+            win3(wf,None)
         else:
-            comp_lin('R')
+            win3(wf,1)
         
     def bkclick():
+        global flag
         window2.destroy()
+        flag = 0
         if wf == 1:
             main()        
         if wf == 2:
@@ -636,184 +694,143 @@ def window2(wf = 1):
         time_bt.pack(side = BOTTOM, pady = 5)
     
     if wf == 2:
-        bim_1 = Image.open(dir_path+'/Internship buttons/Backchanged.png')
-        bim1 = ImageTk.PhotoImage(bim_1)
-        back_bt = Button(fr2, image = bim1, command = bkclick) 
-        back_bt.photo = bim1
+        #bim_1 = Image.open(dir_path+'/Internship buttons/Back2.png')
+        #bim1 = ImageTk.PhotoImage(bim_1)
+        back_bt = tkt.Button(fr2, text = 'Back', fg = 'white',bg = 'red', command = bkclick) 
+        #back_bt.photo = bim1
         back_bt.pack(side = LEFT, padx = 10)
-        ptim_1 = Image.open(dir_path+'/Internship buttons/Proceed to Time Range Selection new.png')
-        ptim1 = ImageTk.PhotoImage(ptim_1)
-        time_bt = Button(fr2,image = ptim1, command = clicked2)
-        time_bt.photo = ptim
+        #ptim_1 = Image.open(dir_path+'/Internship buttons/Proceed to Time Range Selection2.png')
+        #ptim1 = ImageTk.PhotoImage(ptim_1)
+        time_bt = tkt.Button(fr2, text = 'Proceed to Time Range Selection',fg = 'white',bg = 'blue',command = clicked2)
+        #time_bt.photo = ptim
         time_bt.pack(side = BOTTOM, pady = 5)  
         
     window2.mainloop()
  
 #%%
-
-def printout(fr, res_rd):
+def win3(wf,t = None):
     
-    for widget in fr.winfo_children():
-        widget.destroy()
+    '''
+    t is another flag used to instruct the function window3 to call the appropriate function.
+    If t = 1, the comp_lin function is called, which enables comparison of two lines
+    If t = None, the regular operations are carried out
+    '''
+    
+    if wf == 1:
+        data = dataset
+    elif wf ==2:
+        data = dataset2
+    
+    DT_column = data['Date time']
+    
+    
+    if t == None: 
+        s_st = (st_date + dt.timedelta(0))
+        s_et = (st_date + dt.timedelta(hours=23))
+        e_st = (end_date + dt.timedelta(0))
+        e_et = dt.datetime.strptime(dt.datetime.strftime(dt.datetime.strptime(str(end_date + dt.timedelta(hours =23)),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S'),'%d-%m-%Y %H:%M:%S')
+        s_dtip = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))
+        s_dti = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(s_dtip[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(s_dtip))]))
+    
         
-    #txt = 'The production parameters are given by :' 
-    #+'\n' + 'Availability : ' + str(res_rd[0]) + '\n' + 'Quality : ' + str(res_rd[1]) + '\n' + 'Performance : ' + str(res_rd[3]) + '\n' + 'OEE : '  + str(res_rd[2]) 
-    #sres_lbl.configure(text = txt)
-    lst = list({'Availability':res_rd[0],'Quality':res_rd[1],'Performance':res_rd[3],'OEE':res_rd[2]}.items())
-    table(fr, lst)
-
-    
-#%%
-def PieChartDraw(results, fr):
-    global PD_hrs, st_planned, end_planned
-    OEE = results[2]
-    no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
-     #[availability, quality, OEE, performance]
- #   AVailability = (1-Unplanned/Total)
-    UPD_hrs = (1-results[0])*no_hrs
- 
-    with open("data.txt") as f:
-        dict = eval(f.read())
-        Shift1_PD = float(dict['Shift 1'])/60
-        Shift2_PD = float(dict['Shift 2'])/60
-        Shift3_PD = float(dict['Shift 3'])/60
-    f.close()
-    PD_hrs = 0 
-    if Shift1_start < st_time.time()<= Shift1_end:
-        PD_hrs = ((dt.datetime.combine(dt.datetime.today(),Shift1_end)-dt.datetime.combine(dt.datetime.today(),st_time.time())).seconds/((dt.datetime.combine(dt.datetime.today(),Shift1_end)-dt.datetime.combine(dt.datetime.today(),Shift1_start)).seconds))*Shift1_PD
-        st_planned = datetime.datetime.combine(st_time.date(),Shift1_end)
-    elif Shift2_start< st_time.time()<= Shift2_end:
-        PD_hrs = ((dt.datetime.combine(dt.datetime.today(),Shift2_end)-dt.datetime.combine(dt.datetime.today(),st_time.time())).seconds/((dt.datetime.combine(dt.datetime.today(),Shift2_end)-dt.datetime.combine(dt.datetime.today(),Shift2_start)).seconds))*Shift2_PD
-        st_planned = datetime.datetime.combine(st_time.date()+timedelta(days=1),datetime.time(0,0))
-    elif Shift3_start<= st_time.time()<= Shift3_end:
-        PD_hrs = ((dt.datetime.combine(dt.datetime.today(),Shift3_end)-dt.datetime.combine(dt.datetime.today(),st_time.time())).seconds/((dt.datetime.combine(dt.datetime.today(),Shift3_end)-dt.datetime.combine(dt.datetime.today(),Shift3_start)).seconds))*Shift3_PD
-        st_planned = datetime.datetime.combine(st_time.date(),Shift3_end)
-    print(st_planned)   
-    if Shift1_start < end_time.time()<= Shift1_end:
-        PD_hrs = PD_hrs+ ((dt.datetime.combine(dt.datetime.today(),end_time.time())-(dt.datetime.combine(dt.datetime.today(),Shift1_start))).seconds/((dt.datetime.combine(dt.datetime.today(),Shift1_end)-dt.datetime.combine(dt.datetime.today(),Shift1_start)).seconds))*Shift1_PD
-        end_planned = datetime.datetime.combine(end_time.date(),Shift1_start)
-    elif Shift2_start< end_time.time()<= Shift2_end:
-        PD_hrs = PD_hrs+ ((dt.datetime.combine(dt.datetime.today(),end_time.time())-(dt.datetime.combine(dt.datetime.today(),Shift2_start))).seconds/((dt.datetime.combine(dt.datetime.today(),Shift2_end)-dt.datetime.combine(dt.datetime.today(),Shift2_start)).seconds))*Shift2_PD
-        end_planned = datetime.datetime.combine(end_time.date(),Shift2_start)
-    elif Shift3_start<= end_time.time()<= Shift3_end:
-        PD_hrs = PD_hrs+ ((dt.datetime.combine(dt.datetime.today(),end_time.time())-(dt.datetime.combine(dt.datetime.today(),Shift3_start))).seconds/((dt.datetime.combine(dt.datetime.today(),Shift3_end)-dt.datetime.combine(dt.datetime.today(),Shift3_start)).seconds))*Shift3_PD
-        end_planned = datetime.datetime.combine(end_time.date(),Shift3_start)
-    print(end_planned)
-    while(st_planned< end_planned):
-        if st_planned.time() == Shift1_start:
-            PD_hrs = PD_hrs+Shift1_PD
-            st_planned = st_planned+ pd.to_timedelta('08:30:00')
-            print(st_planned)
-        elif st_planned.time() == Shift2_start:
-            PD_hrs = PD_hrs+Shift2_PD
-            st_planned = st_planned+ pd.to_timedelta('08:30:00')
-            print(st_planned)
-        elif st_planned.time() == Shift3_start:
-            PD_hrs = PD_hrs+Shift3_PD
-            st_planned = st_planned+ pd.to_timedelta('07:00:00')
-            print(st_planned)
-    print(PD_hrs)   
-    
-    if PD_hrs<UPD_hrs:
-        UPD_hrs = UPD_hrs-PD_hrs
-    elif PD_hrs>= UPD_hrs:
-        PD_hrs = UPD_hrs
-        UPD_hrs = 0
-    # Availability removing Planned Downtime
-    Avail_PD = 1 - (PD_hrs/((end_time-st_time).seconds/3600))
-    Avail_UPD = 1 - (UPD_hrs/((end_time-st_time).seconds/3600))
-    # Planned Downtime: All shifts have different planned downtime hours. 
-    Quality = results[1]
-    OEE= results[2]
-    Performance = results[3]    
-    
-    PD_loss = (1-Avail_PD)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
-    UD_loss = (1-Avail_UPD)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
-    P_loss = (1-Performance)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
-    Q_loss = (1-Quality)*(1-OEE)/(4-Avail_PD-Avail_UPD-Quality-Performance)
-    
-    backend_ =  mlb.get_backend() 
-    mlb.use("Agg") 
-    
-    labels = ["OEE", 'PD_Loss','UD_Loss', 'P_Loss','Q_Loss']
-    values = [OEE*360, PD_loss*360,UD_loss*360, P_loss*360, Q_loss*360]
-
-    colors = ['Green','#33F3FF','Yellow', 'Red', 'DarkRed'] 
-    explode =(0,0,0.1,0,0.1)
-    
-    f = plt.figure(figsize=(6,6))
-    a = f.add_subplot(111)
-    a.pie(values, explode = explode, colors=colors, startangle=90, autopct='%.1f%%', shadow = True) 
-    a.legend(labels, loc = 'upper right')
-    f.savefig(dir_path+'/temp/pie.png')
-    mlb.use(backend_)
-    
-    canvas = FigureCanvasTkAgg(f,fr)
-    canvas.draw()
-    canvas.get_tk_widget().pack(fill= BOTH, expand=True)
-    plot_flag['Pie'] = 1
-
-#%%
-def window3():
-    global flag
-    flag = 0
-    s_st = (st_date + dt.timedelta(0))
-    s_et = (st_date + dt.timedelta(hours=23))
-    e_st = (end_date + dt.timedelta(0))
-    e_et = (end_date + dt.timedelta(hours =23))
-    s_dti = tuple(pd.date_range(start = s_st, end = s_et, freq = '1H'))
-
-    window3 = tk.ThemedTk()
-    window3.get_themes()
-    window3.set_theme('breeze')
-    window3.geometry('1650x1200')
-    window3.configure(background= '#ffc3a0')
-    frame1 = Frame(window3, relief = RAISED)
-    frame1.pack(fill = X)
-    window3.title('Time selection') 
-    stime_lbl3 = Label(frame1, text = 'Choose starting time:', width = 20)
-    stime_lbl3.pack(side = LEFT, padx = 5, pady = 5)
-    stime_cmb3 = Combobox(frame1)
-    etime_cmb3 = Combobox(frame1, state = 'disabled')
-    
-    def chosen(a):
-        global st_time
-        st_time = dt.datetime.strptime(a,'%Y-%m-%d %H:%M:%S')
-        etime_cmb3.configure(state = 'normal')
-        e_dti = pd.date_range(start = a, end = e_et, freq = '1H')
-        e_dti = tuple(e_dti[np.where(e_dti >= pd.to_datetime(end_date))])
-        etime_cmb3['values'] = e_dti
-        etime_cmb3.current(0)       
+        global window3 
         
-    stime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
-    stime_cmb3['values'] =s_dti
-    stime_cmb3.current(0)
-    stime_cmb3.bind("<<ComboboxSelected>>", lambda x: chosen(stime_cmb3.get()))
-    etime_lbl3 = Label(frame1, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
-    etime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
-    frame2= Frame(window3, relief = RAISED, borderwidth = 2, height = 50)
-    frame2.pack(fill = X)
-    frame2_2 = Frame(window3, relief = FLAT)
-    frame2_2.pack(fill = X)
-    frame1_1= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
-    frame1_1.pack(fill = X)
-    frame3= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
-    frame3.pack(fill = X)
-    sres_lbl = Label(frame2, text = '', font = ('Arial Bold', 18), foreground ='blue')
-    sres_lbl.pack(side= BOTTOM, fill=X, padx = 5, pady = 5)
-    frame4= Frame(window3, relief = RAISED, borderwidth = 2, height = 10)
-    frame4.pack(fill = X)
-    style = Style() 
-    style.configure('W.TButton', font =
-       ('Times New Roman', 12,'bold'), 
-        foreground = 'red', background = '#0000FF') 
+        window3 = tk.ThemedTk()
+        window3.get_themes()
+        window3.set_theme('breeze')
+        window3.geometry('1650x1200')
+        window3.configure(background= '#ffffff')
+        
+        '''
+        Certain additional quantities are made global to support outside access
+        '''
+        ''
+        global frame1, f1l, f1r, f1b, framel, frame2, frame3, f3l, f3r, frameh, frame4, f4l, f4r, f1h, f2h, f3h, f4h, etime_cmb3 
+        ''
+        framet = tkt.Frame(window3, relief = RAISED, bg = '#1a1410', height = 80)
+        framet.pack(side = TOP, fill = X)
+        framet.pack_propagate(0)
+        Lbt = Label(framet, text = 'TIME SELECTION AND RESULTS', foreground = 'white', background = '#1a1410', font = ('Times New Roman',40,'bold','italic'))
+        Lbt.pack(anchor = 'center')
+        Lbt.pack_propagate(0)
+        frame1 = tkt.Frame(window3, relief = FLAT, bg = '#ffffff')
+        frame1.pack(fill = X)
+        f1l = tkt.Frame(frame1, relief = FLAT, width = 550, bg = '#ffffff')
+        f1l.pack(fill = Y, side= LEFT, padx = 5)
+        f1r = tkt.Frame(frame1, relief = FLAT, width = 600, bg = '#ffffff')
+        #f1r.pack(fill = Y, side = LEFT, expand = True, padx = 10)
+        f1h = tkt.Frame(frame1, relief = RAISED, width = 100, borderwidth = 2, bg = '#ffffff')
+        f1b = tkt.Frame(frame1, relief = FLAT, bg = '#ffffff')
+        f1b.pack(side = RIGHT, padx = 10)
+        window3.title('Time selection') 
+        stime_lbl3 = Label(f1l, text = 'Choose starting time:', width = 17.5)
+        stime_lbl3.pack(side = LEFT, padx = 2, pady = 5)
+        stime_cmb3 = Combobox(f1l)
+        etime_cmb3 = Combobox(f1l, state = 'disabled')
     
-    lA = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Line A.png'))
-    lB = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Line B.png'))
-    proq = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Production Quantities.png'))
-    him = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Heat Map.png'))
-    rcim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Run Charts.png')) 
-    ipim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/View Interactive Plot in Browser.png'))
+        def chosen(a):
+            global st_time
+            st_time = dt.datetime.strptime(a,'%d-%m-%Y %H:%M:%S')
+     
+            etime_cmb3.configure(state = 'normal')
+            pdi = pd.date_range(start = st_time, end = e_et, freq = '1H')
+            pdi = tuple(pdi[np.where(pdi >= pd.to_datetime(end_date))])
+            edi = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(pdi[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(pdi))]))
+            etime_cmb3['values'] = edi
+            etime_cmb3.current(0)       
+            
+        stime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
+        stime_cmb3['values'] =s_dti
+        stime_cmb3.current(0)
+        stime_cmb3.bind("<<ComboboxSelected>>", lambda x: chosen(stime_cmb3.get()))
+        etime_lbl3 = Label(f1l, text = 'Choose ending time:').pack(side = LEFT, padx = 2, pady = 5)
+        etime_cmb3.pack(side = LEFT, padx = 5, pady = 5)
+        frame2= tkt.Frame(window3, relief = FLAT, bg = '#ffffff')
+        frame2.pack(side = TOP, fill = X)     
+        framel= tkt.Frame(window3, relief = RAISED, borderwidth = 2, bg = '#ffffff', width = 700)
+        framel.pack(side = LEFT, fill = Y)   
+        framel.pack_propagate(0)
+        framer = tkt.Frame(window3, relief = FLAT, bg = '#ffffff')
+        framer.pack(side = RIGHT, fill = Y)
+        #frame3 = Frame(window3, relief = FLAT)
+        #frame3.pack(fill = X)
+        f3l = tkt.Frame(framel, relief = FLAT, bg = '#ffffff')
+        f3l.pack(fill = X, side = TOP)
+        f3r = tkt.Frame(framer, relief = FLAT, bg = '#ffffff')
+        #f3r.pack(fill = Y, side = RIGHT, padx = 10)
+        frameh = tkt.Frame(framel, relief = FLAT, bg = '#ffffff')
+        frameh.pack(side = TOP, fill = X)
+        #frame4 = Frame(window3, relief = FLAT, borderwidth = 2)
+        #frame4.pack(fill = X, pady = 10)
+        f4l = tkt.Frame(framel, relief = FLAT, bg = '#ffffff')
+        f4l.pack(fill = X, side = TOP)
+        f4r = tkt.Frame(framer, relief = FLAT, bg = '#ffffff')
+        #f4h = Frame(frame4, relief = RAISED, width = 100, borderwidth = 2)
+        #f4r.pack(fill = Y, side = RIGHT, padx = 10)
+        #sres_lbl = Label(frame3, text = '', font = ('Arial Bold', 18), foreground ='blue')
+        #sres_lbl.pack(side= BOTTOM, fill=X, padx = 5, pady = 5)
+        style = Style() 
+        style.configure('W.TButton', font =
+           ('Times New Roman', 10,'bold'), 
+            foreground = 'black', background = '#ffffff') 
+     
+        
+        
+        def quitfun():
+            if mb.askyesno("Quit", "Do you really wish to quit?"):
+                window3.destroy()
+                '''
+                Deletes the global quantities at exit
+                '''
+                ''
+                x = []
+                for y in globals():
+                    x.append(str(y))
+                for i in range(len(x)):
+                    del globals()[x[i]]
+                ''
+                
+        window3.protocol("WM_DELETE_WINDOW", quitfun)
 
     def plotinmap():
         no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
@@ -833,29 +850,37 @@ def window3():
     
         
     def inplot():
-        for widget in frame3.winfo_children():
+        for widget in frameh.winfo_children():
             widget.destroy()
-        for widget in frame1_1.winfo_children():
-            widget.destroy()
-        hm = tkt.Button(frame1_1, image = him, borderwidth = 0, command = plotinmap)
+        hm = tkt.Button(frameh, image = him, borderwidth = 0, command = plotinmap)
         hm.photo = him
-        RC = tkt.Button(frame1_1, image = rcim, borderwidth = 0, command = lambda : RunChartParameters(window3, 1))
-        RC.photo = rcim
+        av = Button(frameh, text = 'Availability', style = 'W.TButton', command = lambda : RunCharts(0, 1))
+        pr = Button(frameh, text = 'Quality', style = 'W.TButton', command = lambda : RunCharts(1, 1))
+        ql = Button(frameh, text = 'Performance', style = 'W.TButton', command = lambda : RunCharts(2, 1))
+        oe = Button(frameh, text = 'OEE', style = 'W.TButton', command = lambda : RunCharts(3, 1))
+        ob = Button(frameh, text = 'OK', style = 'W.TButton', command = lambda : RunCharts(4, 1))
+        nb = Button(frameh, text = 'No GO', style = 'W.TButton', command = lambda : RunCharts(5, 1))
+        
         hm.pack(side = LEFT,padx = 5, pady = 5)
-        RC.pack(side = LEFT,padx = 5, pady = 5)
+        av.pack(side = LEFT,padx = 5, pady = 5)
+        pr.pack(side = LEFT,padx = 5, pady = 5)
+        ql.pack(side = LEFT,padx = 5, pady = 5)
+        oe.pack(side = LEFT,padx = 5, pady = 5)
+        ob.pack(side = LEFT,padx = 5, pady = 5)
+        nb.pack(side = LEFT,padx = 5, pady = 5)
         
     def plotmap(p_table, l = None):
         #global plot_flag
         no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
         if(no_hrs>48):
-            Msg = mb.askyesno(title='Warning', message= 'The selected time range is very large \nHeatmap would not be clear \nWould you still want to continue?') 
+            Msg = mb.askyesno(title='Warning', message= 'The selected time range is very large \nHeatmap would not be clear \nDo you still want to continue?') 
         elif(no_hrs<=48):
             Msg = True
             
         if Msg == True:
             f = Figure(figsize = (30,10))
             f.clf()
-            f.suptitle('Heatmap for 5 minutes')
+            f.suptitle('Heatmap for {} minutes'.format(Hmapxt),fontsize = 30, fontweight = 'bold')
             a = f.add_subplot(111)
             #val = np.array([str(p_table.values[i][j]) for i in range(len(p_table.values)) for j in range(len(p_table.values[0]))])
             #val = val.reshape(np.shape(p_table.values))
@@ -879,9 +904,9 @@ def window3():
     def Settings():
         try:
             with open("data.txt") as f:
-                dict = eval(f.read())
-                Hmapxt = int(dict['Hmapxt'])
-                parttime = int(dict['parttime'])
+                dissct = eval(f.read())
+                Hmapxt = int(dissct['Hmapxt'])
+                parttime = int(dissct['parttime'])
             f.close()
         except FileNotFoundError:
             Hmapxt = 5
@@ -912,7 +937,9 @@ def window3():
         
         def hchosen(self):
             global runhrs
+            global calcflag
             if int(timeEntered2.get())!= runhrs:
+                calcflag = 0
                 Apply.configure(state='normal')
                 
         def applychanges():
@@ -933,7 +960,7 @@ def window3():
                 if Msg==True:
                     Hmapxt= timeEntered.get()
                     parttime = nameEntered1.get()
-                    Dictionary = {'Hmapxt':str(Hmapxt),'parttime':str(parttime)}
+                    Dictionary = {'Hmapxt':str(Hmapxt),'parttime':str(parttime), 'Shift 1':str(60*Shift1_PD), 'Shift 2': str(60*Shift2_PD), 'Shift 3':str(60*Shift3_PD)}
                     out = open("data.txt",'w')
                     out.write(str(Dictionary))
                     out.close()
@@ -974,8 +1001,12 @@ def window3():
         name2 = tkt.IntVar(Setwindow,value=runhrs)
         timeEntered2 = Combobox(Setwindow, width = 7, font=('Times New Roman',15), textvariable = name2)
         timeEntered2.place(relx=0.8, rely=0.5)
-        chrs=[i for i in range(1, no_hrs) if no_hrs%i==0]
-        timeEntered2['values'] = tuple(chrs)
+        chrs=[1,2,4,6,8,16,24,48,72]
+        num = []
+        for x in chrs:
+            if x<(no_hrs/2):
+                num.append(x)
+        timeEntered2['values'] = tuple(num)
         timeEntered2.bind("<<ComboboxSelected>>",hchosen)
         tkt.Label(Setwindow,text='hr(s)',font=('Times New Roman',15,'italic','bold'),bg= '#C0C0C0', fg='black').place(relx=0.9,rely=0.5)
         
@@ -989,143 +1020,317 @@ def window3():
         Setwindow.lift()
         Setwindow.call('wm', 'attributes', '.', '-topmost', True)
         Setwindow.mainloop()
-    
-    def PieChart(win):
-        for widget in frame4.winfo_children():
-            widget.destroy()
 
-        ttk.Label(frame4, text = 'Pie Chart').pack()
+
+    def comp_lin(l):
         
-        PieChartDraw(res, frame4)
-    
-    
-    def RunChartParameters(win,plflag, l = None):
-        for widget in frame3.winfo_children():
-            widget.destroy()
-        for widget in frame1_1.winfo_children():
-            widget.destroy()
+        if(l=='C'):
+            global dataset2, line2
+            file2 = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
             
-        global availability_hrly, quality_hrly, OEE_hrly, performance_hrly, hours, no_hrs
-        st = st_time
-        et = end_time
-        hours = pd.date_range(start = st + dt.timedelta(hours = runhrs), end = et, freq = dt.timedelta(hours=runhrs))
-        no_hrs = int((et - st).seconds/3600) + 24*(end_time-st_time).days
-        
-        availability_hrly = []
-        quality_hrly = []
-        OEE_hrly = []
-        performance_hrly = []   
-        
-        for i in range(int(no_hrs)):
-            hr_res = calc_duration_parameters(st, st+dt.timedelta(hours = runhrs))
-            availability_hrly.append(hr_res[0])
-            quality_hrly.append(hr_res[1])
-            OEE_hrly.append(hr_res[2])
-            performance_hrly.append(hr_res[3])
-            st = st+dt.timedelta(hours = runhrs)
+            if re.search(r"HSL1.csv", file2):
+                line2 = 1
+            if re.search(r"HSL2.csv", file2):
+                line2 = 2
+                
+            '''
+            Similar to the main window
+            Initializes a loading window
+            '''
+            ''
+            mbx = Tk()
+            mbx.geometry('300x100')
+            mbx.title('Please Wait')
+            lbx = Label(mbx, text = 'Kindly Wait. Loading', font = ('Arial Bold', 10)).pack()
             
-        availability_hrly = np.array(availability_hrly)
-        quality_hrly = np.array(quality_hrly)
-        OEE_hrly = np.array(OEE_hrly)
-        performance_hrly = np.array(performance_hrly)
+            frflag = 0 
+            
+            def preproc():
+                global dataset2
+                dataset2 = pd.read_csv(file2, encoding = 'latin')
+                
+                if {'Date','Time','Result','Line ID'}.issubset(dataset2.columns):
+                    print('')
+                elif{' Date'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
+                elif{' Time'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
+                elif{' Result'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
+                elif{' Date'}.issubset(dataset2.columns):
+                    mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
+                else:
+                    mb.showerror("Data error", "Selected file does not contain required data set")
+                    
+                dataset2['Date time'] = pd.Series([dt.datetime.strptime((dataset2['Date'][i] + ' ' + dataset2['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset2.index])
+                dataset2 = dataset2.sort_values(by = 'Date time')
+                dataset2.index = np.arange(len(dataset2))
+                
+                nonlocal frflag
+                frflag = 1
+                
+            def filecheck():
+                if frflag == 1:
+                    mbx.destroy()
+                    window2(wf = 2)
+                if frflag == 0:
+                    mbx.after(500, filecheck)
+                
+            mbx.after(1000, preproc)
+            mbx.after(2000, filecheck)
+            mbx.lift()
+            mbx.call('wm', 'attributes', '.', '-topmost', True)
+            mbx.mainloop()
+            ''
+        if l == 'T':
+            comp = tk.ThemedTk()
+            comp.get_themes()
+            comp.set_theme('breeze')
+            comp.geometry('1000x600')
+            comp.title('Comparison window')
+            
+            fr1 = Frame(comp, relief = FLAT, height = 100)
+            fr1.pack(fill = X)
+            fr2 = Frame(comp, relief = RAISED, height = 100)
+            fr2.pack(fill = X)
+            fr2_1 = Frame(fr2, relief = RAISED, height = 100, borderwidth = 5)
+            fr2_1.pack(side = LEFT, fill = Y)
+            fr2_2 = Frame(fr2, relief = RAISED, height = 100, borderwidth = 5)
+            fr2_2.pack(side = LEFT, fill = Y)
+            fr3 = Frame(comp, relief = RAISED, height = 200)
+            fr3.pack(fill = X)
+            fr3_1 = Frame(fr3, relief = RAISED, height = 200)
+            fr3_1.pack(side = LEFT, fill = Y)
+            fr3_2 = Frame(fr3, relief = RAISED, height = 200)
+            fr3_2.pack(side = LEFT, fill = Y)    
+            style = Style() 
+            style.configure('W.TButton', font =
+               ('Times New Roman', 10,'bold'), 
+                foreground = 'black', background = '#ffffff') 
+            resA = calc_duration_parameters(st_time, end_time, l ='A', wf = 1)
+            resB = calc_duration_parameters(st_time, end_time, l ='B', wf = 1)
+            resA_rd = [str(round(100*resA[i],2))+'%' for i in range(len(resA)-2)]
+            resA_rd.append(str(resA[4]))
+            resA_rd.append(str(resA[5]))
+            resB_rd = [str(round(100*resB[i],2))+'%' for i in range(len(resB)-2)]
+            resB_rd.append(str(resB[4]))
+            resB_rd.append(str(resB[5]))
+            printout(fr2_1, resA_rd, wf = 2, testflag = 1)
+            printout(fr2_2, resB_rd, wf = 2, testflag = 1)
+            PieChartDraw(resA, fr3_1)
+            PieChartDraw(resB, fr3_2)            
+            lb1 = Label(fr2_1, text = 'Line A', font = ('Arial Bold', 16)).pack()
+            lb2 = Label(fr2_2, text = 'Line B', font = ('Arial Bold', 16)).pack()
+            comp.mainloop()
+        
+        if l == 'R': 
+                
+            global f1l, f1r, frame2, f3l, f3r, f4l, f4r
+            f1l.pack(side = LEFT, fill = Y)
+            #f1h.pack(side = LEFT, fill = Y)
+            f1r.pack(side = RIGHT, fill = Y)
+            f3l.pack(side = TOP, fill = X)
+            #f3h.pack(side = TOP, fill = X)
+            f3r.pack(side = TOP, fill = X)
+            f4l.pack(side = TOP, fill = X)
+            #f4h.pack(side = TOP, fill = X)
+            f4r.pack(side = TOP, fill = X)
+            
+            for widget in frame2.winfo_children():
+                if re.search(pattern, widget.winfo_name()):
+                    widget.config(state = 'disabled')
+                    
+            for widget in f1b.winfo_children():
+                widget.destroy()
+                
+            s_st = (sd2 + dt.timedelta(0))
+            s_et = (sd2 + dt.timedelta(hours=23))
+            e_st = (ed2 + dt.timedelta(0))
+            e_et = (ed2 + dt.timedelta(hours =23))
+            s_dtip = pd.date_range(start = s_st, end = s_et, freq = '1H')
+            s_dti = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(s_dtip[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(s_dtip))]))    
+            
+            stime_lblc = Label(f1r, text = 'Choose starting time:', width = 17.5)
+            stime_lblc.pack(side = LEFT, padx = 2, pady = 5)
+            stime_cmbc = Combobox(f1r)
+            etime_cmbc = Combobox(f1r, state = 'disabled')
+            st2 = dt.datetime.now()
+            et2 = dt.datetime.now()
+            
+            def chosen(a):
+                #global st_time
+                nonlocal st2
+                st2 = dt.datetime.strptime(a,'%d-%m-%Y %H:%M:%S') 
+                etime_cmbc.configure(state = 'normal')
+                pdi = pd.date_range(start = st2, end = e_et, freq = '1H')
+                pdi = tuple(pdi[np.where(pdi >= pd.to_datetime(ed2))])
+                edi = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(pdi[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(pdi))]))
+                etime_cmbc['values'] = edi
+                etime_cmbc.current(0)       
+                
+            stime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
+            stime_cmbc['values'] =s_dti
+            stime_cmbc.current(0)
+            stime_cmbc.bind("<<ComboboxSelected>>", lambda x: chosen(stime_cmbc.get()))
+            etime_lblc = Label(f1r, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
+            etime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
+            
+            def clickc():
+                
+                for widget in f3l.winfo_children():
+                    widget.destroy()
+                for widget in f3r.winfo_children():
+                    widget.destroy()
+                for widget in f4l.winfo_children():
+                    widget.destroy()
+                for widget in f4r.winfo_children():
+                    widget.destroy()
+                    
+                nonlocal et2
+                et2 = etime_cmbc.get()
+                # Edit Kaushik 
+                et2 = dt.datetime.strptime(str(et2),'%d-%m-%Y %H:%M:%S')
+                res2 = calc_duration_parameters(st2, et2, wf = 2)
+                res_rd = [str(round(100*res[i],2))+'%' for i in range(len(res)-2)]
+                res_rd.append(str(res[4]))
+                res_rd.append(str(res[5]))
+                res2_rd = [str(round(100*res2[i],2))+'%' for i in range(len(res2)-2)]
+                res2_rd.append(str(res2[4]))
+                res2_rd.append(str(res2[5]))
+                printout(f3l, res_rd, wf = 2)
+                printout(f3r, res2_rd, wf = 2)
+                PieChartDraw(res, f4l)
+                PieChartDraw(res2, f4r)
+                lb1 = Label(f3l, text = 'Line ' + str(line1), font = ('Arial Bold', 16)).pack()
+                lb2 = Label(f3r, text = 'Line ' + str(line2), font = ('Arial Bold', 16)).pack()
+                
+            def back():
+                for widget in f1r.winfo_children():
+                    widget.destroy()
+                for widget in f1b.winfo_children():
+                    widget.destroy()                
+                for widget in f3l.winfo_children():
+                    widget.destroy()
+                for widget in f3r.winfo_children():
+                    widget.destroy()
+                for widget in f4r.winfo_children():
+                    widget.destroy()
+                for widget in frame2.winfo_children():
+                    if re.search(r"button",widget.winfo_name()):
+                        widget.config(state = 'normal')
+                
+                bgim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Go.png'))
+                bim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Back.png'))
+                back_bt = tkt.Button(f1b,image = bim, borderwidth = 0,command = bkclick)
+                back_bt.photo = bim
+                back_bt.pack(side = RIGHT,padx = 10)
+                begin_O = tkt.Button(f1b, image = bgim, borderwidth = 0, command = clicked3)
+                begin_O.photo = bgim
+                begin_O.pack(side = RIGHT, padx = 10)
+                
+                f1l.pack()
+                f3l.pack(side = TOP, padx = 15)
+                res_rd = [str(round(100*res[i],2))+'%' for i in range(len(res)-2)]
+                res_rd.append(res[4])
+                res_rd.append(res[5])
+                printout(f3l, res_rd, wf = 1)
+                lb1 = Label(f3l, text = 'Line ' + str(line1), font = ('Arial Bold', 16)).pack()
+                f4l.pack()
+                dataset2 = None
+            
+            bgim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Accept.png')) 
+            bim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Back2.png'))
+            ac_bt = tkt.Button(f1b, image = bgim, borderwidth = 0, command = clickc)
+            ac_bt.photo = bgim
+            ac_bt.pack(side = LEFT)
+            bk_bt = tkt.Button(f1b, image = bim, borderwidth = 0, command = back)
+            bk_bt.photo = bim
+            bk_bt.pack(side = LEFT)
+            
+        if l == 'X':
+            dataset2 = None
         
     
-        Availability_img = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Availability.png'))
-        Performance_img = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Performance.png'))
-        OEE_img = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/OEE.png'))
-        Quality_img = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Quality.png'))
+    def PieChart():
+        for widget in f4l.winfo_children():
+            widget.destroy()
         
+        if f4r in locals():
+            for widget in f4r.winfo_children():
+                widget.destroy()
+
+        ttk.Label(f4l, text = 'Pie Chart').pack()
         
-        if l != 'P':
-            sres_lbl = ttk.Label(frame3, text = 'Please select required parameter:', font = ('Arial Bold', 18))
-            sres_lbl.pack(fill = BOTH, padx = 5, pady = 5)
-            av = ttk.Button(frame3, image = Availability_img,command = lambda : availability_plot(plflag))
-            av.photo = Availability_img
-            av.pack(side = LEFT, padx = 5, pady = 5)
-            ql = ttk.Button(frame3, image = Quality_img, command = lambda : quality_plot(plflag))
-            ql.photo = Quality_img
-            ql.pack(side = LEFT, padx = 5, pady = 5)
-            oee =  ttk.Button(frame3, image = OEE_img, command = lambda : OEE_plot(plflag))
-            oee.photo = OEE_img
-            oee.pack(side = LEFT, padx = 5, pady = 5)
-            perf = ttk.Button(frame3, image = Performance_img , command = lambda : performance_plot(plflag))
-            perf.photo = Performance_img
-            perf.pack(side = LEFT, padx = 5, pady = 5) 
-        
-    '''    
-    def printout():
-        txt = 'The production parameters are given by :' 
-        #+'\n' + 'Availability : ' + str(res_rd[0]) + '\n' + 'Quality : ' + str(res_rd[1]) + '\n' + 'Performance : ' + str(res_rd[3]) + '\n' + 'OEE : '  + str(res_rd[2]) 
-        sres_lbl.configure(text = txt)
-        lst = list({'Availability':res_rd[0],'Quality':res_rd[1],'Performance':res_rd[3],'OEE':res_rd[2]}.items())
-        table(frame2_2, lst)
-    '''   
+        PieChartDraw(res, f4l)
     
-    def begin(l = None):
-        global flag, res, plot_flag, p_table, Hmapxt, parttime
+    def begin():
+        global flag, res, p_table, Hmapxt, parttime
         
         try:
             with open("data.txt") as f:
-                dict = eval(f.read())
-                Hmapxt = int(dict['Hmapxt'])
-                parttime = int(dict['parttime'])
+                dicts = eval(f.read())
+                Hmapxt = int(dicts['Hmapxt'])
+                parttime = int(dicts['parttime'])
             f.close()
         except FileNotFoundError:
             Hmapxt = 5
             parttime = 60
             
-        
-        for k in plot_flag.keys():
-            plot_flag[k] = 0
-            
-        res = calc_duration_parameters(st_time, end_time,l, wf = 1)
-        res_rd = np.asarray([str(round(100*res[i],2))+'%' for i in range(len(res))])
-        sres_lbl.configure(text = '')
-        
-        for widget in frame1_1.winfo_children():
+        res = calc_duration_parameters(st_time , end_time, wf = 1)
+        res_rd = [str(round(100*res[i],2))+'%' for i in range(len(res)-2)]
+        res_rd.append(str(res[4]))
+        res_rd.append(str(res[5]))
+         
+        for widget in f3l.winfo_children():
             widget.destroy()
-        for widget in frame2_2.winfo_children():
-            widget.destroy()       
-        for widget in frame3.winfo_children():
+        for widget in f4l.winfo_children():
             widget.destroy()
-        for widget in frame4.winfo_children():
-            widget.destroy()        
+        for widget in frameh.winfo_children():
+            widget.destroy()
             
-        p_table = htmp_calc(l)
-        PieChart(window3)
+        p_table = htmp_calc()
+        printout(f3l, res_rd, wf = 1)
+        PieChart()
+        
+        lb1 = Label(f3l, text = 'Line ' + str(line1), font = ('Arial Bold', 16)).pack()
+        
+        him = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Heat Map.png'))
+        rcim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Run Charts.png')) 
+        ipim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/View Interactive Plot in Browser.png'))
         
         image3 = Image.open(dir_path+'/Internship buttons/gear.png')
         image3 = image3.resize((30,30),Image.ANTIALIAS)
         Set_image=ImageTk.PhotoImage(image3)
         Set_bt = tkt.Button(frame2, image = Set_image,borderwidth=0,command = Settings)
         Set_bt.photo = Set_image
-        com_lin = Button(frame2, text = 'Compare high speed lines', style = 'W.TButton', command = lambda : comp_lin('C'))
+        clim = Image.open(dir_path+'/Internship buttons/Compare High Speed Test Lines.png')
+        clim = ImageTk.PhotoImage(clim)
+        com_lin = tkt.Button(frame2, image = clim, borderwidth = 0, command = lambda : comp_lin('C'))
+        com_lin.photo = clim
+        ctim = Image.open(dir_path+'/Internship buttons/Compare Test Lines.png')
+        ctim = ImageTk.PhotoImage(ctim)
         #begin_A.photo = lA
-        com_test = Button(frame2, text = 'Compare test lines', style = 'W.TButton', command = lambda: comp_lin('T'))
+        com_test = tkt.Button(frame2, image = ctim, borderwidth = 0, command = lambda: comp_lin('T'))
+        com_test.photo = ctim
         #begin_B.photo = lB
         Gpdf = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Generate PDF Report.png'))
         begin_rep= tkt.Button(frame2, image = Gpdf, borderwidth = 0, command = lambda: gen_pdf(res_rd))
         begin_rep.photo = Gpdf
-        params = tkt.Button(frame2, image = proq, borderwidth = 0, command = lambda : printout(frame2_2, res_rd))
-        params.photo = proq
         hm = tkt.Button(frame2, image = him, borderwidth = 0, command = lambda : plotmap(p_table))
         hm.photo = him
-        RC = tkt.Button(frame2, image = rcim, borderwidth = 0, command = lambda : RunChartParameters(window3,0,l))
-        RC.photo = rcim
         ip = tkt.Button(frame2, image = ipim, borderwidth = 0, command = inplot)
         ip.photo = ipim
             
-        if(flag == 0):
-            params.pack(side = LEFT, padx = 10)
-            hm.pack(side = LEFT, padx = 10)
-            RC.pack(side = LEFT, padx = 10)
-            ip.pack(side = LEFT, padx = 10)
-            com_lin.pack(side = RIGHT, padx = 10)
-            com_test.pack(side = RIGHT, padx = 10)
-            begin_rep.pack(side = RIGHT, padx = 10)
-            Set_bt.pack(side = RIGHT, padx=(10,20))
-            flag = 1
-  
+        if flag == 0:
+            hm.pack(side = LEFT, padx = (5,2))
+            ip.pack(side = LEFT, padx = 5)
+            Set_bt.pack(side = RIGHT, padx=(2,5))
+            com_lin.pack(side = RIGHT, padx = 2)
+            com_test.pack(side = RIGHT, padx = 2)
+            begin_rep.pack(side = RIGHT, padx = 2)
+            flag = 0
+
+
 
     def gen_pdf(res_rd):           
         mbx = tk.ThemedTk()
@@ -1142,11 +1347,11 @@ def window3():
         
         def doit():
             
-            RunChartParameters(window3, 0, 'P')
-            availability_plot(0,'P')
-            quality_plot(0,'P')
-            performance_plot(0,'P')
-            OEE_plot(0,'P')
+            #RunChartParameters(window3, 0, 'P')
+            RunCharts(0,l = 'P')
+            RunCharts(1,l = 'P')
+            RunCharts(2,l = 'P')
+            RunCharts(3,l = 'P')
             plotmap(p_table,'P')
                 
             pdf = FPDF()
@@ -1190,165 +1395,38 @@ def window3():
         
                 
         mbx.after(500,doit)
-        mbx.after(1000, checkwrite)
+        mbx.after(5000, checkwrite)
         mbx.lift()
         mbx.call('wm', 'attributes', '.', '-topmost', True)
         mbx.mainloop()
                 
-    def clicked3(l = None):
-        global end_time
+    def clicked3():
+        global end_time, calcflag
         end_time = etime_cmb3.get()
-        end_time = dt.datetime.strptime(end_time,'%Y-%m-%d %H:%M:%S')
-        begin(l)
+        end_time = dt.datetime.strptime(end_time,'%d-%m-%Y %H:%M:%S')
+        calcflag = 0
+        begin()
         
     def bkclick():
         window3.destroy()
         window2()
-
         
-    bim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Back.png'))
-    back_bt = tkt.Button(frame1,image = bim, borderwidth = 0,command = bkclick)
-    #back_bt = tkt.Button(frame1, image = bim, borderwidth = 0, command = bkclick)
-    #back_bt.photo = bim
-    back_bt.pack(side = RIGHT, padx = 10)
-    bgim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Go.png'))    
-    begin_O = tkt.Button(frame1, image = bgim, borderwidth = 0, command = clicked3)
-    begin_O.photo = bgim
-    begin_O.pack(side = RIGHT, padx = 10)    
-    window3.mainloop()
+           
+    if t == 1:
+        comp_lin('R')
+        
+    if t == None:
+        bim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Back.png'))
+        back_bt = tkt.Button(f1b,image = bim, borderwidth = 0,command = bkclick)
+        #back_bt = tkt.Button(frame1, image = bim, borderwidth = 0, command = bkclick)
+        #back_bt.photo = bim
+        back_bt.pack(side = RIGHT, padx = 10)
+        bgim = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Go.png'))    
+        begin_O = tkt.Button(f1b, image = bgim, borderwidth = 0, command = clicked3)
+        begin_O.photo = bgim
+        begin_O.pack(side = RIGHT, padx = 10)    
+        window3.mainloop()
     
-#%%
-
-def comp_lin(l):
-    
-    if(l=='C'):
-        global dataset2
-        file2 = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
-        dataset2 = pd.read_csv(file2, encoding = 'latin')
-        
-        'Write a function to do the data reading. As the dataset has been obtained, the function will sort and create the Date time column'
-        
-        if {'Date','Time','Result','Line ID'}.issubset(dataset2.columns):
-            print('')
-        elif{' Date'}.issubset(dataset2.columns):
-            mb.showerror("Data error", "Please remove space before 'Date' in column heading of the selected file")
-        elif{' Time'}.issubset(dataset2.columns):
-            mb.showerror("Data error", "Please remove space before 'Time' in column heading of the selected file")
-        elif{' Result'}.issubset(dataset2.columns):
-            mb.showerror("Data error", "Please remove space before 'Result' in column heading of the selected file")
-        elif{' Date'}.issubset(dataset2.columns):
-            mb.showerror("Data error", "Please remove space before 'Line ID' in column heading of the selected file")
-        else:
-            mb.showerror("Data error", "Selected file does not contain required data set")
-            
-        dataset2['Date time'] = pd.Series([dt.datetime.strptime(( dataset2['Date'][i] + ' ' + dataset2['Time'][i]),'%d-%m-%Y %H:%M:%S') for i in dataset2.index])
-        dataset2 = dataset2.sort_values(by = 'Date time')
-        dataset2.index = np.arange(len(dataset2))
-        window2(wf = 2)
-
-    if l =='R' or l == 'T':
-        comp = tk.ThemedTk()
-        comp.get_themes()
-        comp.set_theme('breeze')
-        comp.geometry('1000x600')
-        comp.title('Comparison window')
-        
-        fr1 = Frame(comp, relief = FLAT, height = 100)
-        fr1.pack(fill = X)
-        fr2 = Frame(comp, relief = RAISED, height = 100)
-        fr2.pack(fill = X)
-        fr2_1 = Frame(fr2, relief = RAISED, height = 100, borderwidth = 5)
-        fr2_1.pack(side = LEFT, fill = Y)
-        fr2_2 = Frame(fr2, relief = RAISED, height = 100, borderwidth = 5)
-        fr2_2.pack(side = LEFT, fill = Y)
-        fr3 = Frame(comp, relief = RAISED, height = 200)
-        fr3.pack(fill = X)
-        fr3_1 = Frame(fr3, relief = RAISED, height = 200)
-        fr3_1.pack(side = LEFT, fill = Y)
-        fr3_2 = Frame(fr3, relief = RAISED, height = 200)
-        fr3_2.pack(side = LEFT, fill = Y)    
-        style = Style() 
-        style.configure('W.TButton', font =
-           ('Times New Roman', 12,'bold'), 
-            foreground = 'red', background = '#0000FF') 
-    
-        if l == 'R':
-            s_st = (sd2 + dt.timedelta(0))
-            s_et = (sd2 + dt.timedelta(hours=23))
-            e_st = (ed2 + dt.timedelta(0))
-            e_et = (ed2 + dt.timedelta(hours =23))
-            s_dtip = pd.date_range(start = s_st, end = s_et, freq = '1H')
-            s_dti = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(s_dtip[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(s_dtip))]))    
-            
-            stime_lblc = Label(fr1, text = 'Choose starting time:', width = 20)
-            stime_lblc.pack(side = LEFT, padx = 5, pady = 5)
-            stime_cmbc = Combobox(fr1)
-            etime_cmbc = Combobox(fr1, state = 'disabled')
-            st2 = dt.datetime.now()
-            et2 = dt.datetime.now()
-            
-            def chosen(a):
-                #global st_time
-                nonlocal st2
-                st2 = dt.datetime.strptime(a,'%d-%m-%Y %H:%M:%S')
-                etime_cmbc.configure(state = 'normal')
-                pdi = pd.date_range(start = st2, end = e_et, freq = '1H')
-                pdi = tuple(pdi[np.where(pdi >= pd.to_datetime(ed2))])
-                edi = tuple(np.asarray([str(dt.datetime.strftime(dt.datetime.strptime(str(pdi[i]),'%Y-%m-%d %H:%M:%S'),'%d-%m-%Y %H:%M:%S')) for i in range(len(pdi))]))
-                etime_cmbc['values'] = edi
-                etime_cmbc.current(0)       
-                
-            stime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
-            stime_cmbc['values'] =s_dti
-            stime_cmbc.current(0)
-            stime_cmbc.bind("<<ComboboxSelected>>", lambda x: chosen(stime_cmbc.get()))
-            etime_lblc = Label(fr1, text = 'Choose ending time:').pack(side = LEFT, padx = 5, pady = 5)
-            etime_cmbc.pack(side = LEFT, padx = 5, pady = 5)
-            
-            def clickc():
-                
-                for widget in fr2_1.winfo_children():
-                    widget.destroy()
-                for widget in fr2_2.winfo_children():
-                    widget.destroy()
-                for widget in fr3_1.winfo_children():
-                    widget.destroy()
-                for widget in fr3_2.winfo_children():
-                    widget.destroy()
-                    
-                nonlocal et2
-                et2 = etime_cmbc.get()
-                et2 = dt.datetime.strptime(str(end_time),'%Y-%m-%d %H:%M:%S')
-                res2 = calc_duration_parameters(st2, et2, wf = 2)
-                res_rd = np.asarray([str(round(100*res[i],2))+'%' for i in range(len(res))])
-                res2_rd = np.asarray([str(round(100*res2[i],2))+'%' for i in range(len(res2))])
-                printout(fr2_1, res_rd)
-                printout(fr2_2, res2_rd)
-                PieChartDraw(res, fr3_1)
-                PieChartDraw(res2, fr3_2)
-                lb1 = Label(fr2_1, text = 'Dataset 1', font = ('Arial Bold', 16)).pack()
-                lb2 = Label(fr2_2, text = 'Dataset 2', font = ('Arial Bold', 16)).pack()
-                
-                ac_bt = Button(fr1, text = 'Accept', style = 'W.TButton', command = clickc)
-                ac_bt.pack(side = LEFT)
-                
-        if l == 'T':
-            resA = calc_duration_parameters(st_time, end_time, l ='A', wf = 1)
-            resB = calc_duration_parameters(st_time, end_time, l ='B', wf = 1)
-            resA_rd = np.asarray([str(round(100*resA[i],2))+'%' for i in range(len(resA))])
-            resB_rd = np.asarray([str(round(100*resB[i],2))+'%' for i in range(len(resB))])
-            printout(fr2_1, resA_rd)
-            printout(fr2_2, resB_rd)
-            PieChartDraw(resA, fr3_1)
-            PieChartDraw(resB, fr3_2)            
-            lb1 = Label(fr2_1, text = 'Line A', font = ('Arial Bold', 16)).pack()
-            lb2 = Label(fr2_2, text = 'Line B', font = ('Arial Bold', 16)).pack()
-                
-        if l == 'X':
-            comp.destroy()
-        
-        comp.mainloop()
-        
 #%%
 if __name__ =='__main__':
     main()
