@@ -217,9 +217,9 @@ def calc_duration_parameters(st, et, l = None, wf = 1):
     return res
 
 #%%
-def htmp_calc():
+def htmp_calc(hflag):
     'This cell prepares the data for calculation of hourly quantities'
-    global p_table
+    global p_table,pl_table
     data = dataset
 
     timear = data['Date time']
@@ -230,7 +230,6 @@ def htmp_calc():
     
     try:
         starttime = dt_relevant[i_bn]
-        print(starttime, timear)
     except IndexError:
         mb.showerror('Error','Time range is out of bounds')
         window3.mainloop()
@@ -253,6 +252,9 @@ def htmp_calc():
         
     'This cell calculates the most important quantities relating to the final calculations'    
     ok_minutely = np.array([Counter(result_minutely[i])['OK'] for i in range(len(result_minutely))])
+    max_val= np.amax(ok_minutely)
+    if hflag ==1:
+        ok_minutely = np.array([(max_val - Counter(result_minutely[i])['OK']) for i in range(len(result_minutely))])
     st2 = starttime + dt.timedelta(hours = 1)
     et2 = end_time - dt.timedelta(hours = 1)
     h1 = np.array([[str(i)]*divn for i in pd.date_range(starttime, et2, freq = '1H')]).flatten()
@@ -262,12 +264,19 @@ def htmp_calc():
     hString = np.array(["{0} - {1}".format(v1,v2) for v1,v2 in zip(h1,h2)])
     mString = np.array(["{1} - {0}".format(v1,v2) for v1, v2 in zip(m1,m2)]*len(hourly_distribution))
     df = pd.DataFrame({'hours': hString, 'minutes': mString, 'OK': ok_minutely}, index = np.arange(divn*len(hourly_distribution)))
-    p_table = pd.pivot_table(df, values ='OK', index ='hours' ,columns ='minutes')
-    in1 = [hString[i*divn] for i in np.arange(len(hourly_distribution))]
-    in2 = mString[0:divn]
-    p_table = p_table.reindex(in1)
-    p_table.columns = p_table.columns.reindex(in2)[0]
-    return p_table        
+    
+    if hflag == 0:
+        p_table = pd.pivot_table(df, values ='OK', index ='hours' ,columns ='minutes')
+        in1 = [hString[i*divn] for i in np.arange(len(hourly_distribution))]
+        in2 = mString[0:divn]
+        p_table = p_table.reindex(in1)
+        p_table.columns = p_table.columns.reindex(in2)[0]   
+    elif hflag == 1:
+        pl_table = pd.pivot_table(df, values ='OK', index ='hours' ,columns ='minutes')
+        in1 = [hString[i*divn] for i in np.arange(len(hourly_distribution))]
+        in2 = mString[0:divn]
+        pl_table = pl_table.reindex(in1)
+        pl_table.columns = pl_table.columns.reindex(in2)[0]      
 
 #%%
 
@@ -816,21 +825,21 @@ def win3(wf,t = None):
      
         
         
-        def quitfun():
-            if mb.askyesno("Quit", "Do you really wish to quit?"):
-                window3.destroy()
-                '''
-                Deletes the global quantities at exit
-                '''
-                ''
-                x = []
-                for y in globals():
-                    x.append(str(y))
-                for i in range(len(x)):
-                    del globals()[x[i]]
-                ''
-                
-        window3.protocol("WM_DELETE_WINDOW", quitfun)
+    def quitfun():
+        if mb.askyesno("Quit", "Do you really wish to quit?"):
+            window3.destroy()
+            '''
+            Deletes the global quantities at exit
+            '''
+            ''
+            x = []
+            for y in globals():
+                x.append(str(y))
+            for i in range(len(x)):
+                del globals()[x[i]]
+            ''
+            
+    window3.protocol("WM_DELETE_WINDOW", quitfun)
 
     def plotinmap():
         no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
@@ -839,15 +848,40 @@ def win3(wf,t = None):
         elif(no_hrs<=48):
             Msg = True
             
-        if Msg == True:
+        def normal():
+            wchoose.destroy()
             fig= go.Figure()
             fc = ['black','white']
             annot_text = np.array([str(p_table.values[i][j]) for i in range(np.shape(p_table.values)[0]) for j in range(np.shape(p_table.values)[1])]).reshape(np.shape(p_table.values))
-            fig = ff.create_annotated_heatmap(z = p_table.values, x = list(p_table.columns), y = list(p_table.index.values), annotation_text = annot_text, colorscale= 'rdylgn', font_colors = fc)
+            fig = ff.create_annotated_heatmap(z = p_table.values, x = list(p_table.columns), y = list(p_table.index.values), annotation_text = annot_text, colorscale= 'RdYlGn', font_colors = fc)
             fig.update_layout(title = dict(text = 'Heat Map depicting produced quantites every {} minutes'.format(Hmapxt), x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
             fig = fig.to_plotly_json()
             plotly.offline.plot(fig)
-    
+        def losses():
+            wchoose.destroy()
+            fig= go.Figure()
+            fc = ['black','white']
+            flatui = ['#008000','#00FF00','#ADFF2F','#FFFF66','#FF0000','#8B0000']
+            annot_text = np.array([str(pl_table.values[i][j]) for i in range(np.shape(pl_table.values)[0]) for j in range(np.shape(pl_table.values)[1])]).reshape(np.shape(pl_table.values))
+            fig = ff.create_annotated_heatmap(z = pl_table.values, x = list(pl_table.columns), y = list(pl_table.index.values), annotation_text = annot_text, colorscale= flatui, font_colors = fc)
+            fig.update_layout(title = dict(text = 'Losses Heat Map depicting produced quantites every {} minutes'.format(Hmapxt), x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
+            fig = fig.to_plotly_json()
+            plotly.offline.plot(fig)
+            
+        if Msg == True:
+            wchoose = tk.ThemedTk()
+            wchoose.get_themes()
+            wchoose.set_theme('breeze')
+            wchoose.configure(background = '#ffcccb')
+            wchoose.geometry('1000x200')
+            wchoose.title('Hare Krishna')
+            l1 = tkt.Label(wchoose,text = 'Which type of Heatmap do you wish to plot?',font = ('Times New Roman',25,'bold','italic'),fg = 'black',bg = '#ffcccb').pack(side = TOP)
+            B1= tkt.Button(wchoose,text = 'Heat Map',width = 20, fg = 'white',bg = 'green',font=('Times New Roman',15,'bold'),command= normal )
+            B1.pack(side = LEFT,padx = 80)
+            B2= tkt.Button(wchoose,text = 'Losses Heat Map',width=20,fg = 'white',bg = 'green', font=('Times New Roman',15,'bold'),command= losses)
+            B2.pack(side = RIGHT,padx = 80)
+            wchoose.mainloop()    
+
         
     def inplot():
         for widget in frameh.winfo_children():
@@ -868,37 +902,74 @@ def win3(wf,t = None):
         ob.pack(side = LEFT,padx = 8, pady = 5)
         nb.pack(side = LEFT,padx = 8, pady = 5)
         
-    def plotmap(p_table, l = None):
+    def plotmap(pt, hflag, l = None):
         #global plot_flag
+
+        f = Figure(figsize = (30,10))
+        f.clf()
+        if hflag == 0:
+            f.suptitle('Heatmap for {} minutes'.format(Hmapxt),fontsize = 30, fontweight = 'bold')
+        else: 
+            f.suptitle('Losses Heatmap for {} minutes'.format(Hmapxt),fontsize = 30, fontweight = 'bold')
+        a = f.add_subplot(111)
+        #val = np.array([str(pt.values[i][j]) for i in range(len(pt.values)) for j in range(len(pt.values[0]))])
+        #val = val.reshape(np.shape(pt.values))
+        if hflag == 0:
+            sns.heatmap(pt, cmap = 'RdYlGn', annot_kws = {'size':15},annot = pt.values, fmt = 'd', ax=a).set_yticklabels(labels = pt.index, rotation = 0)
+        elif hflag == 1:
+            flatui = ['#008000','#00FF00','#ADFF2F','#FFFF66','#FF0000','#8B0000']
+            sns.heatmap(pt, cmap = flatui, annot_kws = {'size':15},annot = pt.values, fmt = 'd', ax=a).set_yticklabels(labels = pt.index, rotation = 0)
+        
+        if l == 'P':
+            if hflag == 0:
+                f.savefig(dir_path + '/temp/heatmap.png')
+            elif hflag == 1:
+                f.savefig(dir_path + '/temp/lossheatmap.png')
+        else:
+            plwindow = tk.ThemedTk()
+            plwindow.get_themes()
+            plwindow.set_theme('clearlooks')
+            plwindow.configure(background= '#ffc3a0')
+            canvas = FigureCanvasTkAgg(f, master = plwindow)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill = BOTH, expand = True)
+            toolbar = NavigationToolbar2Tk(canvas, plwindow)
+            toolbar.update()
+            canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
+            plwindow.mainloop()
+            
+                
+    def hmap_choose():
+        
         no_hrs = int((end_time-st_time).seconds/3600)+24*(end_time-st_time).days
         if(no_hrs>48):
             Msg = mb.askyesno(title='Warning', message= 'The selected time range is very large \nHeatmap would not be clear \nDo you still want to continue?') 
         elif(no_hrs<=48):
             Msg = True
+        
+        def normal():
+            wchoose.destroy()
+            plotmap(p_table,0)
+            
+        def losses():
+            wchoose.destroy() 
+            plotmap(pl_table,1)
             
         if Msg == True:
-            f = Figure(figsize = (30,10))
-            f.clf()
-            f.suptitle('Heatmap for {} minutes'.format(Hmapxt),fontsize = 30, fontweight = 'bold')
-            a = f.add_subplot(111)
-            #val = np.array([str(p_table.values[i][j]) for i in range(len(p_table.values)) for j in range(len(p_table.values[0]))])
-            #val = val.reshape(np.shape(p_table.values))
-            sns.heatmap(p_table, cmap = 'RdYlGn', annot_kws = {'size':15},annot = p_table.values, fmt = 'd', ax=a).set_yticklabels(labels = p_table.index, rotation = 0)
+            wchoose = tk.ThemedTk()
+            wchoose.get_themes()
+            wchoose.set_theme('breeze')
+            wchoose.configure(background = '#ffcccb')
+            wchoose.geometry('1000x200')
+            wchoose.title('Hare Krishna')
+            l1 = tkt.Label(wchoose,text = 'Which type of Heatmap do you wish to plot?',font = ('Times New Roman',25,'bold','italic'),fg = 'black',bg = '#ffcccb').pack(side = TOP)
+            B1= tkt.Button(wchoose,text = 'Heat Map',width = 20, fg = 'white',bg = 'green',font=('Times New Roman',15,'bold'),command= normal )
+            B1.pack(side = LEFT,padx = 80)
+            B2= tkt.Button(wchoose,text = 'Losses Heat Map',width=20,fg = 'white',bg = 'green', font=('Times New Roman',15,'bold'),command= losses)
+            B2.pack(side = RIGHT,padx = 80)
+            wchoose.mainloop()        
             
-            if l == 'P':
-                f.savefig(dir_path + '/temp/heatmap.png')
-            else:
-                plwindow = tk.ThemedTk()
-                plwindow.get_themes()
-                plwindow.set_theme('clearlooks')
-                plwindow.configure(background= '#ffc3a0')
-                canvas = FigureCanvasTkAgg(f, master = plwindow)
-                canvas.draw()
-                canvas.get_tk_widget().pack(fill = BOTH, expand = True)
-                toolbar = NavigationToolbar2Tk(canvas, plwindow)
-                toolbar.update()
-                canvas._tkcanvas.pack(side = TOP, fill = BOTH, expand = True)
-                plwindow.mainloop()
+            
  
     def Settings():
         try:
@@ -1266,7 +1337,7 @@ def win3(wf,t = None):
         PieChartDraw(res, f4l)
     
     def begin():
-        global flag, res, p_table, Hmapxt, parttime
+        global flag, res, Hmapxt, parttime
         
         try:
             with open("data.txt") as f:
@@ -1290,9 +1361,10 @@ def win3(wf,t = None):
         for widget in frameh.winfo_children():
             widget.destroy()
             
-        p_table = htmp_calc()
         printout(f3l, res_rd, wf = 1)
         PieChart()
+        htmp_calc(0)
+        htmp_calc(1)
         
         lb1 = Label(f3l, text = 'Line ' + str(line1), font = ('Arial Bold', 16)).pack()
         
@@ -1318,7 +1390,7 @@ def win3(wf,t = None):
         Gpdf = ImageTk.PhotoImage(Image.open(dir_path+'/Internship buttons/Generate PDF Report.png'))
         begin_rep= tkt.Button(frame2, image = Gpdf, borderwidth = 0, command = lambda: gen_pdf(res_rd))
         begin_rep.photo = Gpdf
-        hm = tkt.Button(frame2, image = him, borderwidth = 0, command = lambda : plotmap(p_table))
+        hm = tkt.Button(frame2, image = him, borderwidth = 0, command = lambda: hmap_choose())
         hm.photo = him
         ip = tkt.Button(frame2, image = ipim, borderwidth = 0, command = inplot)
         ip.photo = ipim
@@ -1343,7 +1415,7 @@ def win3(wf,t = None):
         fl = 0
         
         lbx = Label(mbx, text = 'The PDF is being generated. Kindly Wait', font = ('Arial Bold',10))
-        btx = Button(mbx, text = 'Proceed', state = 'disabled', command = mbx.destroy)
+        btx = tkt.Button(mbx, text = 'Proceed', state = 'disabled',bg = 'blue',fg = 'white', command = mbx.destroy)
         lbx.pack()
         btx.pack(pady = 15)
         
@@ -1354,7 +1426,8 @@ def win3(wf,t = None):
             RunCharts(1,l = 'P')
             RunCharts(2,l = 'P')
             RunCharts(3,l = 'P')
-            plotmap(p_table,'P')
+            plotmap(p_table,0, 'P')
+            plotmap(pl_table,1, 'P')
                 
             pdf = FPDF()
             pdf.set_title('Report$'+str(st_time) + ' to ' + str(end_time))
@@ -1385,11 +1458,14 @@ def win3(wf,t = None):
             pdf.add_page()
             pdf.cell(w = 0, txt = 'The Heat Map for selected time range')
             pdf.image(dir_path+'/temp/heatmap.png', type = 'PNG', x = 5,y = 50, w = 250, h =150)
-            pdf.output('Report$'+str(st_time) + ' to ' + str(end_time)+'.pdf','F')
+            pdf.add_page()
+            pdf.cell(w = 0, txt = 'The Losses Heat Map for selected time range')
+            pdf.image(dir_path+'/temp/lossheatmap.png', type = 'PNG', x = 5,y = 50, w = 250, h =150)
+            pdf.output('Report$.pdf','F')
             
         
         def checkwrite():
-            if os.path.isfile('Report$'+str(st_time) + ' to ' + str(end_time)+'.pdf'):
+            if os.path.isfile('Report$.pdf'):
                 btx.configure(state = 'normal')
                 lbx.configure(text = 'PDF Generated, stored at ' + str(dir_path))
             else:
