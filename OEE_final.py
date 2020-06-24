@@ -844,7 +844,7 @@ def win3(wf,t = None):
             fc = ['black','white']
             annot_text = np.array([str(p_table.values[i][j]) for i in range(np.shape(p_table.values)[0]) for j in range(np.shape(p_table.values)[1])]).reshape(np.shape(p_table.values))
             fig = ff.create_annotated_heatmap(z = p_table.values, x = list(p_table.columns), y = list(p_table.index.values), annotation_text = annot_text, colorscale= 'rdylgn', font_colors = fc)
-            fig.update_layout(title = dict(text = 'Heat Map depicting produced quantites every 5 minutes', x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
+            fig.update_layout(title = dict(text = 'Heat Map depicting produced quantites every {} minutes'.format(Hmapxt), x = 0.5, y = 0.05, xanchor = 'center', yanchor = 'top'), xaxis_title = 'Minutes', yaxis_title = 'Hours', font = dict(family = 'Courier New, monospace', size = 18, color = '#7f7f7f'))        
             fig = fig.to_plotly_json()
             plotly.offline.plot(fig)
     
@@ -852,22 +852,21 @@ def win3(wf,t = None):
     def inplot():
         for widget in frameh.winfo_children():
             widget.destroy()
-        hm = tkt.Button(frameh, image = him, borderwidth = 0, command = plotinmap)
-        hm.photo = him
-        av = Button(frameh, text = 'Availability', style = 'W.TButton', command = lambda : RunCharts(0, 1))
-        pr = Button(frameh, text = 'Quality', style = 'W.TButton', command = lambda : RunCharts(1, 1))
-        ql = Button(frameh, text = 'Performance', style = 'W.TButton', command = lambda : RunCharts(2, 1))
-        oe = Button(frameh, text = 'OEE', style = 'W.TButton', command = lambda : RunCharts(3, 1))
-        ob = Button(frameh, text = 'OK', style = 'W.TButton', command = lambda : RunCharts(4, 1))
-        nb = Button(frameh, text = 'No GO', style = 'W.TButton', command = lambda : RunCharts(5, 1))
+        hm = tkt.Button(frameh, text = 'HeatMap',bg = 'red',fg = 'white',font = ('Times New Roman',15), command = plotinmap)
+        av = tkt.Button(frameh, text = 'Availability',bg = 'red',fg = 'white',font = ('Times New Roman',15), command = lambda : RunCharts(0, 1))
+        pr = tkt.Button(frameh, text = 'Quality', bg = 'red',fg = 'white',font = ('Times New Roman',15), command = lambda : RunCharts(1, 1))
+        ql = tkt.Button(frameh, text = 'Performance', bg = 'red',fg = 'white',font = ('Times New Roman',15), command = lambda : RunCharts(2, 1))
+        oe = tkt.Button(frameh, text = 'OEE', bg = 'red',fg = 'white',font = ('Times New Roman',15), command = lambda : RunCharts(3, 1))
+        ob = tkt.Button(frameh, text = 'OK', bg = 'red',fg = 'white',font = ('Times New Roman',15), command = lambda : RunCharts(4, 1))
+        nb = tkt.Button(frameh, text = 'No GO', bg = 'red',fg = 'white',font = ('Times New Roman',15), command = lambda : RunCharts(5, 1))
         
-        hm.pack(side = LEFT,padx = 5, pady = 5)
-        av.pack(side = LEFT,padx = 5, pady = 5)
-        pr.pack(side = LEFT,padx = 5, pady = 5)
-        ql.pack(side = LEFT,padx = 5, pady = 5)
-        oe.pack(side = LEFT,padx = 5, pady = 5)
-        ob.pack(side = LEFT,padx = 5, pady = 5)
-        nb.pack(side = LEFT,padx = 5, pady = 5)
+        hm.pack(side = LEFT,padx = 8, pady = 5)
+        av.pack(side = LEFT,padx = 8, pady = 5)
+        pr.pack(side = LEFT,padx = 8, pady = 5)
+        ql.pack(side = LEFT,padx = 8, pady = 5)
+        oe.pack(side = LEFT,padx = 8, pady = 5)
+        ob.pack(side = LEFT,padx = 8, pady = 5)
+        nb.pack(side = LEFT,padx = 8, pady = 5)
         
     def plotmap(p_table, l = None):
         #global plot_flag
@@ -1028,6 +1027,9 @@ def win3(wf,t = None):
             global dataset2, line2
             file2 = filedialog.askopenfilename(filetypes = (("Comma Separated Variables","*.csv"),("all files","*.*")))
             
+            for widget in frameh.winfo_children():
+                widget.destroy()
+                
             if re.search(r"HSL1.csv", file2):
                 line2 = 1
             if re.search(r"HSL2.csv", file2):
